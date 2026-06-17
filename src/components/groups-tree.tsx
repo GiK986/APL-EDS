@@ -10,9 +10,10 @@ interface GroupsTreeProps {
   tree: GroupNodeV2Dto;
   brand: string;
   basePath: string;
+  groupsToken?: string;
 }
 
-export function GroupsTree({ tree, brand, basePath }: GroupsTreeProps) {
+export function GroupsTree({ tree, brand, basePath, groupsToken }: GroupsTreeProps) {
   const [selected, setSelected] = useState<GroupNodeV2Dto | null>(
     tree.children?.[0] ?? null
   );
@@ -52,13 +53,13 @@ export function GroupsTree({ tree, brand, basePath }: GroupsTreeProps) {
             </div>
             {subGroups.length === 0 && selected.links?.some(l => l.action === 'getGroupParts') && (
               <div className="p-4">
-                <SubGroupItem group={selected} brand={brand} basePath={basePath} />
+                <SubGroupItem group={selected} brand={brand} basePath={basePath} groupsToken={groupsToken} />
               </div>
             )}
             <ul className="divide-y divide-border">
               {subGroups.map((sub, i) => (
                 <li key={sub.token ?? sub.name ?? i} className="px-4 py-2">
-                  <SubGroupItem group={sub} brand={brand} basePath={basePath} />
+                  <SubGroupItem group={sub} brand={brand} basePath={basePath} groupsToken={groupsToken} />
                 </li>
               ))}
             </ul>
@@ -73,9 +74,10 @@ interface SubGroupItemProps {
   group: GroupNodeV2Dto;
   brand: string;
   basePath: string;
+  groupsToken?: string;
 }
 
-function SubGroupItem({ group, brand, basePath }: SubGroupItemProps) {
+function SubGroupItem({ group, brand, basePath, groupsToken }: SubGroupItemProps) {
   const partsLink = group.links?.find((l) => l.action === 'getGroupParts');
   const hasChildren = (group.children?.length ?? 0) > 0;
 
@@ -86,7 +88,7 @@ function SubGroupItem({ group, brand, basePath }: SubGroupItemProps) {
   }
 
   if (partsLink) {
-    const href = `${basePath}/parts?token=${encodeURIComponent(partsLink.token)}`;
+    const href = `${basePath}/groups/parts?token=${encodeURIComponent(partsLink.token)}${groupsToken ? `&groupsToken=${encodeURIComponent(groupsToken)}` : ''}`;
     return (
       <Link
         href={href}
@@ -106,7 +108,7 @@ function SubGroupItem({ group, brand, basePath }: SubGroupItemProps) {
         <ul className="ml-3 space-y-0.5">
           {group.children.map((child, ci) => (
             <li key={child.token ?? ci}>
-              <SubGroupItem group={child} brand={brand} basePath={basePath} />
+              <SubGroupItem group={child} brand={brand} basePath={basePath} groupsToken={groupsToken} />
             </li>
           ))}
         </ul>

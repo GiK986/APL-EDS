@@ -1,31 +1,31 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { getGroups, getLang } from '@/actions/yq';
-import { GroupsTree } from '@/components/groups-tree';
+import { getGroupParts, getLang } from '@/actions/yq';
+import { PartsTable } from '@/components/parts-table';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
 
 interface PageProps {
   params: Promise<{ brand: string }>;
-  searchParams: Promise<{ token?: string; navToken?: string }>;
+  searchParams: Promise<{ token?: string; groupsToken?: string }>;
 }
 
-export default async function GroupsPage({ params, searchParams }: PageProps) {
-  const [{ brand }, { token, navToken }] = await Promise.all([params, searchParams]);
+export default async function PartsPage({ params, searchParams }: PageProps) {
+  const [{ brand }, { token, groupsToken }] = await Promise.all([params, searchParams]);
   const lang = (await getLang()) as Lang;
 
   if (!token) return notFound();
 
-  const groupsRes = await getGroups(token);
-  if (groupsRes.error || !groupsRes.data) return notFound();
+  const partsRes = await getGroupParts(token);
+  if (partsRes.error || !partsRes.data) return notFound();
 
   const brandLabel = decodeURIComponent(brand)
     .split('-')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 
-  const basePath = `/catalog/${brand}`;
+  const groupsHref = `/catalog/${brand}/groups${groupsToken ? `?token=${encodeURIComponent(groupsToken)}` : ''}`;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
@@ -36,23 +36,22 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <Link
-          href={`/catalog/${brand}${navToken ? `?token=${encodeURIComponent(navToken)}` : ''}`}
+          href={`/catalog/${brand}`}
           className="hover:text-foreground transition-colors"
         >
           {brandLabel}
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="font-medium text-foreground">{t('groups', lang)}</span>
+        <Link href={groupsHref} className="hover:text-foreground transition-colors">
+          {t('groups', lang)}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="font-medium text-foreground">{t('parts', lang)}</span>
       </nav>
 
-      <h1 className="mb-4 text-xl font-bold">{brandLabel} — {t('groups', lang)}</h1>
+      <h1 className="mb-6 text-xl font-bold">{t('parts', lang)}</h1>
 
-      <GroupsTree
-        tree={groupsRes.data}
-        brand={brand}
-        basePath={basePath}
-        groupsToken={token}
-      />
+      <PartsTable categories={partsRes.data.categories} />
     </div>
   );
 }
