@@ -7,11 +7,21 @@ import type { Lang } from '@/lib/i18n';
 
 interface PageProps {
   params: Promise<{ brand: string }>;
-  searchParams: Promise<{ token?: string; groupsToken?: string }>;
+  searchParams: Promise<{
+    token?: string;
+    groupsToken?: string;
+    vin?: string;
+    model?: string;
+    group?: string;
+    subgroup?: string;
+  }>;
 }
 
 export default async function PartsPage({ params, searchParams }: PageProps) {
-  const [{ brand }, { token, groupsToken }] = await Promise.all([params, searchParams]);
+  const [{ brand }, { token, groupsToken, vin, model, group, subgroup }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const lang = (await getLang()) as Lang;
 
   if (!token) return notFound();
@@ -24,7 +34,11 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 
-  const groupsHref = `/catalog/${brand}/groups${groupsToken ? `?token=${encodeURIComponent(groupsToken)}` : ''}`;
+  const groupsParams = new URLSearchParams();
+  if (groupsToken) groupsParams.set('token', groupsToken);
+  if (vin) groupsParams.set('vin', vin);
+  if (model) groupsParams.set('model', model);
+  const groupsHref = `/catalog/${brand}/groups${groupsParams.toString() ? `?${groupsParams}` : ''}`;
 
   return (
     <div className="px-4 py-4 sm:px-6">
@@ -32,8 +46,10 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
         segments={[
           { label: t('start', lang), href: '/' },
           { label: brandLabel, href: `/catalog/${brand}` },
-          { label: t('groups', lang), href: groupsHref },
-          { label: t('parts', lang) },
+          ...(vin ? [{ label: vin, href: groupsHref }] : []),
+          { label: model || t('groups', lang), href: groupsHref },
+          ...(group ? [{ label: group, href: groupsHref }] : []),
+          { label: subgroup || t('parts', lang) },
         ]}
       />
 

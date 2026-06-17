@@ -105,9 +105,9 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
     }
   }
 
-  function goToVehicle(vehicle: VehicleV2Dto) {
+  function goToVehicle(vehicle: VehicleV2Dto, vin: string) {
     const targetBrand = brand ?? brandSlug(vehicle.brand);
-    const href = buildVehicleGroupsHref(targetBrand, vehicle);
+    const href = buildVehicleGroupsHref(targetBrand, vehicle, vin);
     if (href) {
       setDirectOpen(false);
       router.push(href);
@@ -129,7 +129,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
           setDirectError(t('noVehicleFoundDirect', lang));
         } else if (vehicles.length === 1) {
           saveRecent(vehicles[0], value, Date.now());
-          goToVehicle(vehicles[0]);
+          goToVehicle(vehicles[0], value);
         } else {
           setDirectVehicles(vehicles);
         }
@@ -140,8 +140,9 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
   }
 
   function handleSelectVehicle(vehicle: VehicleV2Dto, searchedAt: number) {
-    saveRecent(vehicle, directValue.trim(), searchedAt);
-    goToVehicle(vehicle);
+    const vin = directValue.trim();
+    saveRecent(vehicle, vin, searchedAt);
+    goToVehicle(vehicle, vin);
   }
 
   const filteredRecent = recent

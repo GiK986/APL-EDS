@@ -7,11 +7,11 @@ import type { Lang } from '@/lib/i18n';
 
 interface PageProps {
   params: Promise<{ brand: string }>;
-  searchParams: Promise<{ token?: string; navToken?: string }>;
+  searchParams: Promise<{ token?: string; navToken?: string; vin?: string; model?: string }>;
 }
 
 export default async function GroupsPage({ params, searchParams }: PageProps) {
-  const [{ brand }, { token, navToken }] = await Promise.all([params, searchParams]);
+  const [{ brand }, { token, navToken, vin, model }] = await Promise.all([params, searchParams]);
   const lang = (await getLang()) as Lang;
 
   if (!token) return notFound();
@@ -25,6 +25,11 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
     .join(' ');
 
   const basePath = `/catalog/${brand}`;
+  const vehicleParams = new URLSearchParams({ token });
+  if (navToken) vehicleParams.set('navToken', navToken);
+  if (vin) vehicleParams.set('vin', vin);
+  if (model) vehicleParams.set('model', model);
+  const vehicleHref = `${basePath}/groups?${vehicleParams}`;
 
   return (
     <div className="px-4 py-4 sm:px-6">
@@ -35,7 +40,8 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
             label: brandLabel,
             href: `/catalog/${brand}${navToken ? `?token=${encodeURIComponent(navToken)}` : ''}`,
           },
-          { label: t('groups', lang) },
+          ...(vin ? [{ label: vin, href: vehicleHref }] : []),
+          { label: model || t('groups', lang) },
         ]}
       />
 
@@ -45,6 +51,8 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
           brand={brand}
           basePath={basePath}
           groupsToken={token}
+          vin={vin}
+          model={model}
         />
       </div>
     </div>

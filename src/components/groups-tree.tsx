@@ -11,9 +11,11 @@ interface GroupsTreeProps {
   brand: string;
   basePath: string;
   groupsToken?: string;
+  vin?: string;
+  model?: string;
 }
 
-export function GroupsTree({ tree, brand, basePath, groupsToken }: GroupsTreeProps) {
+export function GroupsTree({ tree, brand, basePath, groupsToken, vin, model }: GroupsTreeProps) {
   const [selected, setSelected] = useState<GroupNodeV2Dto | null>(
     tree.children?.[0] ?? null
   );
@@ -53,13 +55,29 @@ export function GroupsTree({ tree, brand, basePath, groupsToken }: GroupsTreePro
             </div>
             {subGroups.length === 0 && selected.links?.some(l => l.action === 'getGroupParts') && (
               <div className="p-4">
-                <SubGroupItem group={selected} brand={brand} basePath={basePath} groupsToken={groupsToken} />
+                <SubGroupItem
+                  group={selected}
+                  brand={brand}
+                  basePath={basePath}
+                  groupsToken={groupsToken}
+                  vin={vin}
+                  model={model}
+                  mainGroupName={selected.name}
+                />
               </div>
             )}
             <ul className="divide-y divide-border">
               {subGroups.map((sub, i) => (
                 <li key={sub.token ?? sub.name ?? i} className="px-4 py-2">
-                  <SubGroupItem group={sub} brand={brand} basePath={basePath} groupsToken={groupsToken} />
+                  <SubGroupItem
+                    group={sub}
+                    brand={brand}
+                    basePath={basePath}
+                    groupsToken={groupsToken}
+                    vin={vin}
+                    model={model}
+                    mainGroupName={selected.name}
+                  />
                 </li>
               ))}
             </ul>
@@ -75,9 +93,20 @@ interface SubGroupItemProps {
   brand: string;
   basePath: string;
   groupsToken?: string;
+  vin?: string;
+  model?: string;
+  mainGroupName?: string;
 }
 
-function SubGroupItem({ group, brand, basePath, groupsToken }: SubGroupItemProps) {
+function SubGroupItem({
+  group,
+  brand,
+  basePath,
+  groupsToken,
+  vin,
+  model,
+  mainGroupName,
+}: SubGroupItemProps) {
   const partsLink = group.links?.find((l) => l.action === 'getGroupParts');
   const hasChildren = (group.children?.length ?? 0) > 0;
 
@@ -88,7 +117,13 @@ function SubGroupItem({ group, brand, basePath, groupsToken }: SubGroupItemProps
   }
 
   if (partsLink) {
-    const href = `${basePath}/groups/parts?token=${encodeURIComponent(partsLink.token)}${groupsToken ? `&groupsToken=${encodeURIComponent(groupsToken)}` : ''}`;
+    const params = new URLSearchParams({ token: partsLink.token });
+    if (groupsToken) params.set('groupsToken', groupsToken);
+    if (vin) params.set('vin', vin);
+    if (model) params.set('model', model);
+    if (mainGroupName) params.set('group', mainGroupName);
+    params.set('subgroup', group.name);
+    const href = `${basePath}/groups/parts?${params}`;
     return (
       <Link
         href={href}
@@ -108,7 +143,15 @@ function SubGroupItem({ group, brand, basePath, groupsToken }: SubGroupItemProps
         <ul className="ml-3 space-y-0.5">
           {group.children.map((child, ci) => (
             <li key={child.token ?? ci}>
-              <SubGroupItem group={child} brand={brand} basePath={basePath} groupsToken={groupsToken} />
+              <SubGroupItem
+                group={child}
+                brand={brand}
+                basePath={basePath}
+                groupsToken={groupsToken}
+                vin={vin}
+                model={model}
+                mainGroupName={mainGroupName}
+              />
             </li>
           ))}
         </ul>
