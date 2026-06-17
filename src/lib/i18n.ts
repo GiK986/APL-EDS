@@ -43,6 +43,7 @@ const translations = {
     plateSearchFailed: 'Search failed. Check plate number and try again.',
     unitLabel: 'Unit',
     missingApiKeyHint: 'Add YQ_API_KEY to .env.local to load brands',
+    selectPlaceholder: '— Select —',
   },
   bg: {
     appTitle: 'OEM Каталог за части',
@@ -86,6 +87,7 @@ const translations = {
     plateSearchFailed: 'Търсенето неуспешно. Проверете номера и опитайте отново.',
     unitLabel: 'Възел',
     missingApiKeyHint: 'Добавете YQ_API_KEY в .env.local, за да заредите марките',
+    selectPlaceholder: '— Изберете —',
   },
 } as const;
 

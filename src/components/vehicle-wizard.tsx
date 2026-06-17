@@ -166,6 +166,7 @@ export function VehicleWizard({
               field={field}
               onChange={(value) => handleWizardChange(field.name, value)}
               disabled={isPending}
+              lang={lang}
             />
           ))}
           {wizardError && (
@@ -258,9 +259,10 @@ interface WizardFieldProps {
   field: FieldV2;
   onChange: (value: string) => void;
   disabled: boolean;
+  lang: Lang;
 }
 
-function WizardField({ field, onChange, disabled }: WizardFieldProps) {
+function WizardField({ field, onChange, disabled, lang }: WizardFieldProps) {
   if (field.type === 'input') {
     return (
       <div className="space-y-1.5">
@@ -287,7 +289,7 @@ function WizardField({ field, onChange, disabled }: WizardFieldProps) {
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
       >
-        <option value="">— Select —</option>
+        <option value="">{t('selectPlaceholder', lang)}</option>
         {field.options.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
