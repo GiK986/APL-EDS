@@ -10,6 +10,7 @@ import type {
   GroupsTreeResponseV2,
   NavigationTreeResponseV2,
   PartsListByCategoryResponseV2,
+  UnitInfoResponseV2,
   PartReferencesResponseV2,
   FormValueV2,
 } from '@/types/yq';
@@ -130,6 +131,18 @@ export async function getGroupParts(
 ): Promise<PartsListByCategoryResponseV2> {
   return yqFetch<PartsListByCategoryResponseV2>(
     '/restApi/v2/getGroupParts',
+    { token, filterValues, currentFilterState },
+    await lang()
+  );
+}
+
+export async function getUnitInfo(
+  token: string,
+  filterValues: FormValueV2[] = [],
+  currentFilterState = ''
+): Promise<UnitInfoResponseV2> {
+  return yqFetch<UnitInfoResponseV2>(
+    '/restApi/v2/getUnitInfo',
     { token, filterValues, currentFilterState },
     await lang()
   );

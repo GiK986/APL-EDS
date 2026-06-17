@@ -219,6 +219,34 @@ export interface PartsListByCategoryResponseV2 {
   error?: ErrorDtoV2;
 }
 
+export interface ImageMapAreaV2Dto {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  areaCode: string;
+}
+
+export interface ImageMapV2Dto {
+  imageName: string;
+  areas: ImageMapAreaV2Dto[];
+}
+
+export interface UnitInfoV2Dto {
+  code: string;
+  name: string;
+  links?: LinkV2Dto[];
+  token?: string;
+  imageMaps?: ImageMapV2Dto[];
+  attributes?: AttrNodeV2[];
+}
+
+export interface UnitInfoResponseV2 {
+  dataType: string;
+  data: UnitInfoV2Dto;
+  error?: ErrorDtoV2;
+}
+
 export interface PartReferencesV2Dto {
   brand: string;
   catalogName: string;

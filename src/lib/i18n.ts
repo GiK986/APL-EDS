@@ -43,6 +43,11 @@ const translations = {
     brandSelection: 'Brand selection',
     noVehicleFoundDirect: 'No vehicle found for this VIN.',
     directSearchFailed: 'Search failed. Check VIN and try again.',
+    note: 'Note',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    resetZoom: 'Reset zoom',
+    noDiagram: 'No diagram available',
   },
   bg: {
     appTitle: 'OEM Каталог за части',
@@ -86,6 +91,11 @@ const translations = {
     brandSelection: 'Избор на марка',
     noVehicleFoundDirect: 'Няма намерено превозно средство за този VIN.',
     directSearchFailed: 'Търсенето неуспешно. Проверете VIN и опитайте отново.',
+    note: 'Забележка',
+    zoomIn: 'Увеличи',
+    zoomOut: 'Намали',
+    resetZoom: 'Възстанови мащаба',
+    noDiagram: 'Няма налична диаграма',
   },
 } as const;
 
