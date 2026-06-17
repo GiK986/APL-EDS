@@ -3,17 +3,11 @@ import path from 'path';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { logoSlug } from '@/lib/logo-slug';
 import type { CatalogV2Dto } from '@/types/yq';
 
 interface BrandCardProps {
   catalog: CatalogV2Dto;
-}
-
-function logoSlug(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 export function BrandCard({ catalog }: BrandCardProps) {

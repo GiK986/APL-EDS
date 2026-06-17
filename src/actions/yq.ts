@@ -73,12 +73,28 @@ export async function findVehicle(
   );
 }
 
-export async function findByPlateNumber(
-  formValues: FormValueV2[]
-): Promise<VehicleListResponseV2> {
+export async function searchVehicleByVin(
+  brand: string,
+  vin: string
+): Promise<VehicleListResponseV2 | null> {
+  const catalogsRes = await getCatalogs();
+  const catalog = catalogsRes.data?.catalogs.find(
+    (c) => c.brand.toLowerCase().replace(/\s+/g, '-') === brand
+  );
+  if (!catalog) return null;
+
+  const infoToken = catalog.links[0]?.token ?? catalog.token;
+  const infoRes = await getCatalogInfo(infoToken);
+  const vinForm = infoRes.data?.forms.find((f) => f.operationName === 'FINDVEHICLE_V2');
+  if (!vinForm) return null;
+
+  return findVehicle(vinForm.token, [{ name: 'IdentString', value: vin }]);
+}
+
+export async function searchVehicleByVinGlobal(vin: string): Promise<VehicleListResponseV2> {
   return yqFetch<VehicleListResponseV2>(
-    '/restApi/v2/findByPlateNumber',
-    { token: null, formValues },
+    '/restApi/v2/findVehicle',
+    { token: null, formValues: [{ name: 'IdentString', value: vin }] },
     await lang()
   );
 }

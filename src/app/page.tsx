@@ -1,5 +1,6 @@
 import { getCatalogs, getLang } from '@/actions/yq';
 import { BrandCard } from '@/components/brand-card';
+import { VinSearchBox } from '@/components/catalog/vin-search-box';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
 
@@ -10,6 +11,13 @@ export default async function BrandGridPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <div className="mb-8 flex flex-col items-center text-center">
+        <h2 className="text-sm font-medium text-muted-foreground">
+          {t('vehicleIdentification', lang as Lang)}
+        </h2>
+        <VinSearchBox lang={lang as Lang} className="mt-2 w-full max-w-sm" />
+      </div>
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold">{t('selectBrand', lang as Lang)}</h1>
         <p className="mt-1 text-sm text-muted-foreground">

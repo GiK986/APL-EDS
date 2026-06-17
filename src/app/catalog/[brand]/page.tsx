@@ -1,6 +1,4 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
 import { getCatalogInfo, getCatalogs, getLang } from '@/actions/yq';
 import { VehicleWizard } from '@/components/vehicle-wizard';
 import { t } from '@/lib/i18n';
@@ -36,10 +34,6 @@ export default async function CatalogPage({ params, searchParams }: PageProps) {
 
 function renderPage(brand: string, lang: Lang, forms: FormV2Dto[]) {
   const wizardForm = forms.find((f) => f.operationName === 'WIZARD');
-  const vinForm = forms.find((f) => f.operationName === 'FINDVEHICLE_V2');
-  const plateForm = forms.find(
-    (f) => f.operationName === 'FINDVEHICLEBYPLATENUMBER_V2'
-  );
 
   const brandLabel = decodeURIComponent(brand)
     .split('-')
@@ -47,24 +41,12 @@ function renderPage(brand: string, lang: Lang, forms: FormV2Dto[]) {
     .join(' ');
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground transition-colors">
-          {t('allBrands', lang)}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <span className="font-medium text-foreground">{brandLabel}</span>
-      </nav>
-
-      <h1 className="mb-6 text-2xl font-bold">{brandLabel}</h1>
-
+    <div className="px-4 py-4 sm:px-6">
       {wizardForm ? (
         <VehicleWizard
           initialForm={wizardForm}
           brand={brand}
-          vinForm={vinForm}
-          plateForm={plateForm}
+          brandLabel={brandLabel}
           lang={lang}
         />
       ) : (
