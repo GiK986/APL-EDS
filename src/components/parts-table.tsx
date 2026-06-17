@@ -1,15 +1,17 @@
 import { cn } from '@/lib/utils';
 import type { CategoryV2Dto, PartV2Dto } from '@/types/yq';
+import { t, type Lang } from '@/lib/i18n';
 
 interface PartsTableProps {
   categories: CategoryV2Dto[];
+  lang: Lang;
 }
 
-export function PartsTable({ categories }: PartsTableProps) {
+export function PartsTable({ categories, lang }: PartsTableProps) {
   if (categories.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border">
-        <p className="text-sm text-muted-foreground">No parts found</p>
+        <p className="text-sm text-muted-foreground">{t('noResults', lang)}</p>
       </div>
     );
   }
@@ -34,7 +36,7 @@ export function PartsTable({ categories }: PartsTableProps) {
                   <h3 className="text-sm font-medium">{unitData.unit.name}</h3>
                   {unitData.unit.code && (
                     <p className="text-xs text-muted-foreground">
-                      Unit: {unitData.unit.code}
+                      {t('unitLabel', lang)}: {unitData.unit.code}
                     </p>
                   )}
                 </div>
@@ -59,19 +61,19 @@ export function PartsTable({ categories }: PartsTableProps) {
                       <thead className="border-b border-border bg-muted/50">
                         <tr>
                           <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground w-10">
-                            Pos.
+                            {t('position', lang)}
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">
-                            Part No.
+                            {t('partNumber', lang)}
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">
-                            Description
+                            {t('partName', lang)}
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground w-16">
-                            Qty
+                            {t('qty', lang)}
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground hidden lg:table-cell">
-                            Remarks
+                            {t('remarks', lang)}
                           </th>
                         </tr>
                       </thead>

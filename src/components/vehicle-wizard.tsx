@@ -10,12 +10,14 @@ import {
 } from '@/actions/yq';
 import type { FormV2Dto, VehicleV2Dto, FieldV2, SelectV2 } from '@/types/yq';
 import { cn } from '@/lib/utils';
+import { t, type Lang } from '@/lib/i18n';
 
 interface VehicleWizardProps {
   initialForm: FormV2Dto;
   brand: string;
   vinForm?: FormV2Dto;
   plateForm?: FormV2Dto;
+  lang: Lang;
 }
 
 type Tab = 'wizard' | 'vin' | 'plate';
@@ -25,6 +27,7 @@ export function VehicleWizard({
   brand,
   vinForm,
   plateForm,
+  lang,
 }: VehicleWizardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -83,7 +86,7 @@ export function VehicleWizard({
           setVehicles(res.data?.vehicles ?? []);
         }
       } catch {
-        setWizardError('Failed to update form. Please try again.');
+        setWizardError(t('formUpdateFailed', lang));
       }
     });
   }
@@ -98,11 +101,11 @@ export function VehicleWizard({
           { name: 'IdentString', value: vinValue.trim() },
         ]);
         const vs = res.data?.vehicles ?? [];
-        if (vs.length === 0) setVinError('No vehicle found for this VIN.');
+        if (vs.length === 0) setVinError(t('noVehicleFoundVin', lang));
         else if (vs.length === 1) navigateToVehicle(vs[0]);
         else setVinVehicles(vs);
       } catch {
-        setVinError('Search failed. Check VIN and try again.');
+        setVinError(t('vinSearchFailed', lang));
       }
     });
   }
@@ -117,11 +120,11 @@ export function VehicleWizard({
         if (plateCountry) formValues.push({ name: 'CountryCode', value: plateCountry });
         const res = await findByPlateNumber(formValues);
         const vs = res.data?.vehicles ?? [];
-        if (vs.length === 0) setPlateError('No vehicle found for this plate.');
+        if (vs.length === 0) setPlateError(t('noVehicleFoundPlate', lang));
         else if (vs.length === 1) navigateToVehicle(vs[0]);
         else setPlateVehicles(vs);
       } catch {
-        setPlateError('Search failed. Check plate number and try again.');
+        setPlateError(t('plateSearchFailed', lang));
       }
     });
   }
@@ -135,9 +138,9 @@ export function VehicleWizard({
       {/* Tabs */}
       <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
         {([
-          ['wizard', 'Model / Year'],
-          ...(vinForm ? [['vin', 'VIN / Frame']] : []),
-          ...(plateForm ? [['plate', 'Plate']] : []),
+          ['wizard', t('tabModelYear', lang)],
+          ...(vinForm ? [['vin', t('tabVin', lang)]] : []),
+          ...(plateForm ? [['plate', t('tabPlate', lang)]] : []),
         ] as [Tab, string][]).map(([tab, label]) => (
           <button
             key={tab}
@@ -169,7 +172,7 @@ export function VehicleWizard({
             <p className="text-sm text-destructive">{wizardError}</p>
           )}
           {vehicles.length > 0 && (
-            <VehicleList vehicles={vehicles} onSelect={navigateToVehicle} />
+            <VehicleList vehicles={vehicles} onSelect={navigateToVehicle} lang={lang} />
           )}
         </div>
       )}
@@ -191,12 +194,12 @@ export function VehicleWizard({
               disabled={isPending || !vinValue.trim()}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
             >
-              Search
+              {t('search', lang)}
             </button>
           </div>
           {vinError && <p className="text-sm text-destructive">{vinError}</p>}
           {vinVehicles.length > 0 && (
-            <VehicleList vehicles={vinVehicles} onSelect={navigateToVehicle} />
+            <VehicleList vehicles={vinVehicles} onSelect={navigateToVehicle} lang={lang} />
           )}
         </div>
       )}
@@ -211,7 +214,7 @@ export function VehicleWizard({
                 onChange={(e) => setPlateCountry(e.target.value)}
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Country</option>
+                <option value="">{t('countryCode', lang)}</option>
                 {plateCountryCodes.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -232,18 +235,18 @@ export function VehicleWizard({
               disabled={isPending || !plateValue.trim()}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
             >
-              Search
+              {t('search', lang)}
             </button>
           </div>
           {plateError && <p className="text-sm text-destructive">{plateError}</p>}
           {plateVehicles.length > 0 && (
-            <VehicleList vehicles={plateVehicles} onSelect={navigateToVehicle} />
+            <VehicleList vehicles={plateVehicles} onSelect={navigateToVehicle} lang={lang} />
           )}
         </div>
       )}
 
       {isPending && (
-        <p className="text-sm text-muted-foreground animate-pulse">Loading…</p>
+        <p className="text-sm text-muted-foreground animate-pulse">{t('loading', lang)}</p>
       )}
     </div>
   );
@@ -298,13 +301,14 @@ function WizardField({ field, onChange, disabled }: WizardFieldProps) {
 interface VehicleListProps {
   vehicles: VehicleV2Dto[];
   onSelect: (vehicle: VehicleV2Dto) => void;
+  lang: Lang;
 }
 
-function VehicleList({ vehicles, onSelect }: VehicleListProps) {
+function VehicleList({ vehicles, onSelect, lang }: VehicleListProps) {
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold text-muted-foreground">
-        {vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''} found
+        {`${vehicles.length} ${t('vehicleFoundSuffix', lang)}`}
       </h3>
       <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
         {vehicles.map((v, i) => (

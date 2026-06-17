@@ -22,7 +22,7 @@ export default async function BrandGridPage() {
           <p className="text-muted-foreground">
             {process.env.YQ_API_KEY
               ? t('noResults', lang as Lang)
-              : 'Add YQ_API_KEY to .env.local to load brands'}
+              : t('missingApiKeyHint', lang as Lang)}
           </p>
         </div>
       ) : (

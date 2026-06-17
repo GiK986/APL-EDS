@@ -51,7 +51,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
 
       <h1 className="mb-6 text-xl font-bold">{t('parts', lang)}</h1>
 
-      <PartsTable categories={partsRes.data.categories} />
+      <PartsTable categories={partsRes.data.categories} lang={lang} />
     </div>
   );
 }

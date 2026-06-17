@@ -65,6 +65,7 @@ function renderPage(brand: string, lang: Lang, forms: FormV2Dto[]) {
           brand={brand}
           vinForm={vinForm}
           plateForm={plateForm}
+          lang={lang}
         />
       ) : (
         <p className="text-muted-foreground">{t('noResults', lang)}</p>
