@@ -1,9 +1,37 @@
-export default function Home() {
+import { getCatalogs, getLang } from '@/actions/yq';
+import { BrandCard } from '@/components/brand-card';
+import { t } from '@/lib/i18n';
+import type { Lang } from '@/lib/i18n';
+
+export default async function BrandGridPage() {
+  const [catalogsRes, lang] = await Promise.all([getCatalogs(), getLang()]);
+  const catalogs = catalogsRes.data?.catalogs ?? [];
+  const activeCatalogs = catalogs.filter((c) => !c.archived);
+
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <p className="text-muted-foreground">
-        Clone target not yet built. Run <code className="font-mono text-foreground">/clone-website</code> to start.
-      </p>
-    </main>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold">{t('selectBrand', lang as Lang)}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {activeCatalogs.length} {t('allBrands', lang as Lang).toLowerCase()}
+        </p>
+      </div>
+
+      {catalogs.length === 0 ? (
+        <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border">
+          <p className="text-muted-foreground">
+            {process.env.YQ_API_KEY
+              ? t('noResults', lang as Lang)
+              : 'Add YQ_API_KEY to .env.local to load brands'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {activeCatalogs.map((catalog) => (
+            <BrandCard key={catalog.token} catalog={catalog} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
