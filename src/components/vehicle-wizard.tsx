@@ -75,11 +75,7 @@ export function VehicleWizard({
     });
   }
 
-  const wizardReady =
-    wizardForm.action === 'findVehicleOperation' &&
-    wizardForm.fields
-      .filter((f): f is SelectV2 => f.type === 'select')
-      .every((f) => f.options.some((o) => o.selected));
+  const wizardReady = wizardForm.action === 'findVehicleOperation';
 
   function handleWizardSearch() {
     if (!wizardReady) return;
@@ -169,15 +165,16 @@ export function VehicleWizard({
       {/* Wizard tab */}
       {activeTab === 'wizard' && (
         <div className="space-y-4">
-          {wizardForm.fields.map((field) => (
-            <WizardField
-              key={field.name}
-              field={field}
-              onChange={(value) => handleWizardChange(field.name, value)}
-              disabled={isPending}
-              lang={lang}
-            />
-          ))}
+          <div className="flex overflow-x-auto rounded border border-[#6e6e6e]">
+            {wizardForm.fields.map((field) => (
+              <WizardField
+                key={field.name}
+                field={field}
+                onChange={(value) => handleWizardChange(field.name, value)}
+                disabled={isPending}
+              />
+            ))}
+          </div>
           {wizardReady && (
             <button
               onClick={handleWizardSearch}
@@ -277,43 +274,39 @@ interface WizardFieldProps {
   field: FieldV2;
   onChange: (value: string) => void;
   disabled: boolean;
-  lang: Lang;
 }
 
-function WizardField({ field, onChange, disabled, lang }: WizardFieldProps) {
-  if (field.type === 'input') {
-    return (
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium">{field.label}</label>
-        <input
-          type="text"
-          placeholder={field.examples?.[0]?.value ?? ''}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-        />
-      </div>
-    );
-  }
-
-  const selected = field.options.find((o) => o.selected);
-
+function WizardField({ field, onChange, disabled }: WizardFieldProps) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium">{field.label}</label>
-      <select
-        value={selected?.value ?? ''}
-        disabled={disabled || field.options.length === 0}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-      >
-        <option value="">{t('selectPlaceholder', lang)}</option>
-        {field.options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+    <div className="flex min-w-[180px] flex-1 flex-col border-r border-[#6e6e6e] last:border-r-0">
+      <div className="bg-[#808285] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-[#e4e4e4]">
+        {field.label}
+      </div>
+      <div className="max-h-[420px] overflow-y-auto bg-white">
+        {field.type === 'input' ? (
+          <input
+            type="text"
+            placeholder={field.examples?.[0]?.value ?? ''}
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full border-0 px-3 py-2 text-[11px] font-bold text-[#808080] outline-none disabled:opacity-50"
+          />
+        ) : (
+          field.options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => onChange(opt.value)}
+              disabled={disabled}
+              className={cn(
+                'block w-full px-3 py-1.5 text-left text-[11px] font-bold text-[#808080] transition-colors hover:bg-[#e4e4e4] disabled:cursor-not-allowed',
+                (opt.selected || field.options.length === 1) && 'bg-[#f7c400]'
+              )}
+            >
+              {opt.label}
+            </button>
+          ))
+        )}
+      </div>
     </div>
   );
 }
