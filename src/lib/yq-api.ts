@@ -12,7 +12,7 @@ export async function yqFetch<T>(
     method: body !== undefined ? 'POST' : 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'X-API-KEY': key,
+      Authorization: `Basic ${key}`,
       'Accept-Language': lang,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
