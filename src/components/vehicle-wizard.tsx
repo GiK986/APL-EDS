@@ -69,24 +69,33 @@ export function VehicleWizard({
           { name: fieldName, value },
         ]);
         setWizardForm(updated.data);
-
-        // Check if we can now resolve the vehicle
-        const allSelected = updated.data.fields
-          .filter((f): f is SelectV2 => f.type === 'select')
-          .every((f) => f.options.some((o) => o.selected));
-
-        if (allSelected && updated.data.action === 'findVehicleOperation') {
-          const selectedValues = updated.data.fields
-            .filter((f): f is SelectV2 => f.type === 'select')
-            .map((f) => ({
-              name: f.name,
-              value: f.options.find((o) => o.selected)!.value,
-            }));
-          const res = await findVehicleOperation(updated.data.token, selectedValues);
-          setVehicles(res.data?.vehicles ?? []);
-        }
       } catch {
         setWizardError(t('formUpdateFailed', lang));
+      }
+    });
+  }
+
+  const wizardReady =
+    wizardForm.action === 'findVehicleOperation' &&
+    wizardForm.fields
+      .filter((f): f is SelectV2 => f.type === 'select')
+      .every((f) => f.options.some((o) => o.selected));
+
+  function handleWizardSearch() {
+    if (!wizardReady) return;
+    setWizardError(null);
+    setVehicles([]);
+    startTransition(async () => {
+      try {
+        // wizardForm.token already encodes every selection made so far —
+        // resending field values here causes the API to reject the request
+        // with "Invalid parameter".
+        const res = await findVehicleOperation(wizardForm.token, []);
+        const vs = res.data?.vehicles ?? [];
+        if (vs.length === 0) setWizardError(t('noVehicleFoundWizard', lang));
+        else setVehicles(vs);
+      } catch {
+        setWizardError(t('wizardSearchFailed', lang));
       }
     });
   }
@@ -169,6 +178,15 @@ export function VehicleWizard({
               lang={lang}
             />
           ))}
+          {wizardReady && (
+            <button
+              onClick={handleWizardSearch}
+              disabled={isPending}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
+            >
+              {t('search', lang)}
+            </button>
+          )}
           {wizardError && (
             <p className="text-sm text-destructive">{wizardError}</p>
           )}

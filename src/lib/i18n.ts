@@ -44,6 +44,8 @@ const translations = {
     unitLabel: 'Unit',
     missingApiKeyHint: 'Add YQ_API_KEY to .env.local to load brands',
     selectPlaceholder: '— Select —',
+    noVehicleFoundWizard: 'No vehicle found for this selection.',
+    wizardSearchFailed: 'Search failed. Please try again.',
   },
   bg: {
     appTitle: 'OEM Каталог за части',
@@ -88,6 +90,8 @@ const translations = {
     unitLabel: 'Възел',
     missingApiKeyHint: 'Добавете YQ_API_KEY в .env.local, за да заредите марките',
     selectPlaceholder: '— Изберете —',
+    noVehicleFoundWizard: 'Няма намерено превозно средство за тази селекция.',
+    wizardSearchFailed: 'Търсенето неуспешно. Опитайте отново.',
   },
 } as const;
 
