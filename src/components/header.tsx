@@ -1,0 +1,31 @@
+import Link from 'next/link';
+import { Search } from 'lucide-react';
+import { getLang } from '@/actions/yq';
+import { t } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import type { Lang } from '@/lib/i18n';
+
+export async function AppHeader() {
+  const lang = (await getLang()) as Lang;
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <Link href="/" className="flex items-center gap-2 font-semibold">
+          <span className="text-primary">{t('appTitle', lang)}</span>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="hidden items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground sm:flex"
+          >
+            <Search className="h-4 w-4" />
+            <span>{t('searchPart', lang)}</span>
+          </Link>
+          <LanguageSwitcher currentLang={lang} />
+        </div>
+      </div>
+    </header>
+  );
+}
