@@ -1,0 +1,247 @@
+// YQ Service REST API v2 — TypeScript types
+
+export interface FormValueV2 {
+  name: string;
+  value: string;
+}
+
+export interface LinkV2Dto {
+  action: string;
+  label: string;
+  token: string;
+}
+
+export interface NavigationLinkV2Dto {
+  action: string;
+  label: string;
+  token: string;
+  code: string; // "MAIN" | "GROUPS"
+}
+
+export interface ErrorDtoV2 {
+  code?: string;
+  message?: string;
+}
+
+export interface OptionV2 {
+  value: string;
+  label: string;
+  selected?: boolean;
+}
+
+export interface ExampleValueV2 {
+  description: string;
+  value: string;
+}
+
+export interface InputFieldV2 {
+  type: 'input';
+  name: string;
+  label: string;
+  pattern?: string;
+  examples?: ExampleValueV2[];
+}
+
+export interface SelectV2 {
+  type: 'select';
+  name: string;
+  label: string;
+  options: OptionV2[];
+  selected?: boolean;
+}
+
+export type FieldV2 = InputFieldV2 | SelectV2;
+
+export interface FormV2Dto {
+  action: string;
+  updateFormAction?: string;
+  label: string;
+  operationName: string;
+  description?: string;
+  token: string;
+  fields: FieldV2[];
+}
+
+export interface AttrNodeV2 {
+  code: string;
+  label: string;
+  values: string[];
+  type: string;
+  children?: AttrNodeV2[];
+}
+
+export interface CatalogV2Dto {
+  token: string;
+  name: string;
+  brand: string;
+  archived: boolean;
+  links: LinkV2Dto[];
+}
+
+export interface CatalogListV2Dto {
+  catalogs: CatalogV2Dto[];
+  forms?: FormV2Dto[];
+}
+
+export interface CatalogListResponseV2 {
+  dataType: string;
+  data: CatalogListV2Dto;
+  error?: ErrorDtoV2;
+}
+
+export interface CatalogInfoV2Dto {
+  token: string;
+  name: string;
+  brand: string;
+  archived: boolean;
+  forms: FormV2Dto[];
+  links?: LinkV2Dto[];
+}
+
+export interface CatalogInfoResponseV2 {
+  dataType: string;
+  data: CatalogInfoV2Dto;
+  error?: ErrorDtoV2;
+}
+
+export interface VehicleV2Dto {
+  token: string;
+  type: string;
+  brand: string;
+  model: string;
+  attributes: AttrNodeV2[];
+  sysProperties: Array<{ code: string; value: string }>;
+  navigationLinks: NavigationLinkV2Dto[];
+  links: LinkV2Dto[];
+  forms?: FormV2Dto[];
+}
+
+export interface VehicleListV2Dto {
+  vehicles: VehicleV2Dto[];
+}
+
+export interface VehicleListResponseV2 {
+  dataType: string;
+  data: VehicleListV2Dto;
+  error?: ErrorDtoV2;
+}
+
+export interface OperationFormResponseV2 {
+  dataType: string;
+  data: FormV2Dto;
+  error?: ErrorDtoV2;
+}
+
+export interface GroupNodeV2Dto {
+  token?: string;
+  name: string;
+  code?: string;
+  links?: LinkV2Dto[];
+  children?: GroupNodeV2Dto[];
+}
+
+export interface GroupsTreeResponseV2 {
+  dataType: string;
+  data: GroupNodeV2Dto;
+  currentFilterState?: string;
+  error?: ErrorDtoV2;
+}
+
+export interface CategoryNodeV2Dto {
+  token?: string;
+  name: string;
+  code?: string;
+  links?: LinkV2Dto[];
+  children?: CategoryNodeV2Dto[];
+}
+
+export interface NavigationTreeResponseV2 {
+  dataType: string;
+  data: CategoryNodeV2Dto;
+  currentFilterState?: string;
+  error?: ErrorDtoV2;
+}
+
+export interface PartQtyV2 {
+  note?: string;
+  qty?: number;
+}
+
+export interface PartV2Dto {
+  partNumber: string;
+  partName: string;
+  qty?: PartQtyV2;
+  partNumberFormatted?: string;
+  displayName?: string;
+  attributes?: AttrNodeV2[];
+  areaCode?: string;
+  matched?: boolean;
+  refs?: LinkV2Dto[];
+  related?: LinkV2Dto[];
+  links?: LinkV2Dto[];
+}
+
+export interface UnitShortV2Dto {
+  code: string;
+  name: string;
+  description?: string;
+  token?: string;
+  imageNames?: string[];
+  links?: LinkV2Dto[];
+  attributes?: AttrNodeV2[];
+}
+
+export interface PartSectionV2Dto {
+  title?: string;
+  parts: PartV2Dto[];
+}
+
+export interface PartsByUnitV2Dto {
+  unit: UnitShortV2Dto;
+  partSections: PartSectionV2Dto[];
+  token?: string;
+  imageNames?: string[];
+}
+
+export interface CategoryV2Dto {
+  category: UnitShortV2Dto;
+  units: PartsByUnitV2Dto[];
+}
+
+export interface PartsListByCategoryV2Dto {
+  categories: CategoryV2Dto[];
+}
+
+export interface PartsListByCategoryResponseV2 {
+  dataType: string;
+  data: PartsListByCategoryV2Dto;
+  currentFilterState?: string;
+  error?: ErrorDtoV2;
+}
+
+export interface PartReferencesV2Dto {
+  brand: string;
+  catalogName: string;
+  token: string;
+  links?: LinkV2Dto[];
+}
+
+export interface PartReferencesListV2Dto {
+  references: PartReferencesV2Dto[];
+}
+
+export interface PartReferencesResponseV2 {
+  dataType: string;
+  data: PartReferencesListV2Dto;
+  error?: ErrorDtoV2;
+}
+
+export interface CustomerDto {
+  login: string;
+}
+
+export interface CustomerResponseV2 {
+  dataType: string;
+  data: CustomerDto;
+  error?: ErrorDtoV2;
+}
