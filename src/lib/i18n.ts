@@ -50,6 +50,13 @@ const translations = {
     noDiagram: 'No diagram available',
     showAllParts: 'Show all parts for this diagram',
     loadingAllParts: 'Loading all parts…',
+    vehicleInfoUnavailable: 'No vehicle selected.',
+    vehicleInfoLoadFailed: 'Failed to load vehicle data.',
+    close: 'Close',
+    filterLevel: 'Filter level',
+    filterLevelFull: 'Full match — parts are filtered exactly for this VIN.',
+    filterLevelPartial:
+      'Partial match — diagrams may not be fully filtered for this vehicle. Double-check part selections.',
   },
   bg: {
     appTitle: 'OEM Каталог за части',
@@ -100,6 +107,13 @@ const translations = {
     noDiagram: 'Няма налична диаграма',
     showAllParts: 'Покажи всички части за тази диаграма',
     loadingAllParts: 'Зареждане на всички части…',
+    vehicleInfoUnavailable: 'Няма избран автомобил.',
+    vehicleInfoLoadFailed: 'Грешка при зареждане на данните за автомобила.',
+    close: 'Затвори',
+    filterLevel: 'Ниво на филтриране',
+    filterLevelFull: 'Пълно съвпадение — частите са филтрирани точно за този VIN.',
+    filterLevelPartial:
+      'Частично съвпадение — схемите може да не са филтрирани напълно за този автомобил. Проверявайте внимателно избора на части.',
   },
 } as const;
 

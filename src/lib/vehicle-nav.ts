@@ -14,6 +14,7 @@ export function buildVehicleGroupsHref(
 ): string | null {
   const groupsLink = vehicle.navigationLinks.find((l) => l.code === 'GROUPS');
   const mainLink = vehicle.navigationLinks.find((l) => l.code === 'MAIN');
+  const vehicleInfoLink = vehicle.links.find((l) => l.action === 'getVehicleInfo');
   if (!groupsLink) return null;
   const params = new URLSearchParams({
     token: groupsLink.token,
@@ -21,5 +22,6 @@ export function buildVehicleGroupsHref(
     model: vehicleModelLabel(vehicle),
   });
   if (vin) params.set('vin', vin);
+  if (vehicleInfoLink) params.set('vehicleInfoToken', vehicleInfoLink.token);
   return `/catalog/${encodeURIComponent(brand)}/groups?${params}`;
 }

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { getCatalogs, getLang } from '@/actions/yq';
 import { CatalogHeader } from '@/components/catalog/catalog-header';
 import { CatalogSidebar } from '@/components/catalog/catalog-sidebar';
@@ -26,7 +27,9 @@ export default async function CatalogLayout({ children, params }: CatalogLayoutP
         lang={lang as Lang}
       />
       <div className="flex flex-1">
-        <CatalogSidebar lang={lang as Lang} />
+        <Suspense fallback={<div className="w-12 shrink-0 border-r border-border bg-muted/30" />}>
+          <CatalogSidebar lang={lang as Lang} />
+        </Suspense>
         <main className="flex-1 overflow-x-hidden">{children}</main>
       </div>
     </div>

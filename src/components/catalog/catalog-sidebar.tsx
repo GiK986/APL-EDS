@@ -1,29 +1,141 @@
-import { Car, Search } from 'lucide-react';
+'use client';
+
+import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Car, Search, X } from 'lucide-react';
+import { getVehicleInfo } from '@/actions/yq';
 import { t, type Lang } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+import type { VehicleV2Dto } from '@/types/yq';
 
 interface CatalogSidebarProps {
   lang: Lang;
 }
 
 export function CatalogSidebar({ lang }: CatalogSidebarProps) {
+  const searchParams = useSearchParams();
+  const vehicleInfoToken = searchParams.get('vehicleInfoToken') ?? undefined;
+  const vin = searchParams.get('vin') ?? undefined;
+
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [vehicle, setVehicle] = useState<VehicleV2Dto | null>(null);
+  const [loadedToken, setLoadedToken] = useState<string | null>(null);
+
+  function handleToggle() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    if (!vehicleInfoToken || loadedToken === vehicleInfoToken) return;
+    setLoading(true);
+    setError(null);
+    getVehicleInfo(vehicleInfoToken)
+      .then((res) => {
+        if (res.error || !res.data) {
+          setError(t('vehicleInfoLoadFailed', lang));
+          return;
+        }
+        setVehicle(res.data);
+        setLoadedToken(vehicleInfoToken);
+      })
+      .catch(() => setError(t('vehicleInfoLoadFailed', lang)))
+      .finally(() => setLoading(false));
+  }
+
+  const filterLevel = vehicle?.sysProperties.find((p) => p.code === 'filter_level')?.value;
+  const filterLevelFull = filterLevel === 'full';
+
   return (
-    <aside className="flex w-12 shrink-0 flex-col items-center gap-1.5 border-r border-border bg-muted/30 py-2">
-      <button
-        type="button"
-        title={t('vehicleIdentification', lang)}
-        aria-current="true"
-        className="flex h-10 w-10 items-center justify-center rounded-md bg-background text-foreground shadow-sm"
-      >
-        <Car className="h-5 w-5" />
-      </button>
-      <button
-        type="button"
-        title={t('searchPart', lang)}
-        disabled
-        className="flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-md text-muted-foreground/40"
-      >
-        <Search className="h-5 w-5" />
-      </button>
-    </aside>
+    <div className="flex shrink-0">
+      <aside className="flex w-12 shrink-0 flex-col items-center gap-1.5 border-r border-border bg-muted/30 py-2">
+        <button
+          type="button"
+          title={t('vehicleIdentification', lang)}
+          aria-current={open}
+          onClick={handleToggle}
+          className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-md shadow-sm transition-colors',
+            open ? 'bg-primary/10 text-primary' : 'bg-background text-foreground'
+          )}
+        >
+          <Car className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          title={t('searchPart', lang)}
+          disabled
+          className="flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-md text-muted-foreground/40"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+      </aside>
+
+      {open && (
+        <div className="w-72 shrink-0 overflow-y-auto border-r border-border bg-background p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">{t('vehicleDetails', lang)}</h2>
+            <button
+              type="button"
+              title={t('close', lang)}
+              onClick={() => setOpen(false)}
+              className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {!vehicleInfoToken && (
+            <p className="text-sm text-muted-foreground">{t('vehicleInfoUnavailable', lang)}</p>
+          )}
+          {loading && (
+            <p className="text-sm text-muted-foreground animate-pulse">{t('loading', lang)}</p>
+          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          {vehicle && !loading && !error && (
+            <div className="space-y-3">
+              <div>
+                <div className="text-base font-semibold">
+                  {vehicle.brand} {vehicle.model}
+                </div>
+                {vin && <div className="font-mono text-xs text-muted-foreground">{vin}</div>}
+              </div>
+
+              {filterLevel && (
+                <div
+                  className={cn(
+                    'rounded-md border px-2.5 py-2 text-xs',
+                    filterLevelFull
+                      ? 'border-green-600/30 bg-green-600/10 text-green-700'
+                      : 'border-amber-500/30 bg-amber-500/10 text-amber-700'
+                  )}
+                >
+                  <div className="font-semibold">
+                    {t('filterLevel', lang)}: {filterLevel}
+                  </div>
+                  <div className="mt-0.5">
+                    {filterLevelFull
+                      ? t('filterLevelFull', lang)
+                      : t('filterLevelPartial', lang)}
+                  </div>
+                </div>
+              )}
+
+              <dl className="space-y-1.5 text-sm">
+                {vehicle.attributes.map((a) => (
+                  <div key={a.code} className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">{a.label}</dt>
+                    <dd className="text-right font-medium">{a.values.join(', ')}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

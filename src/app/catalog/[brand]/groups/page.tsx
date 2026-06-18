@@ -7,11 +7,20 @@ import type { Lang } from '@/lib/i18n';
 
 interface PageProps {
   params: Promise<{ brand: string }>;
-  searchParams: Promise<{ token?: string; navToken?: string; vin?: string; model?: string }>;
+  searchParams: Promise<{
+    token?: string;
+    navToken?: string;
+    vin?: string;
+    model?: string;
+    vehicleInfoToken?: string;
+  }>;
 }
 
 export default async function GroupsPage({ params, searchParams }: PageProps) {
-  const [{ brand }, { token, navToken, vin, model }] = await Promise.all([params, searchParams]);
+  const [{ brand }, { token, navToken, vin, model, vehicleInfoToken }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const lang = (await getLang()) as Lang;
 
   if (!token) return notFound();
@@ -29,6 +38,7 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
   if (navToken) vehicleParams.set('navToken', navToken);
   if (vin) vehicleParams.set('vin', vin);
   if (model) vehicleParams.set('model', model);
+  if (vehicleInfoToken) vehicleParams.set('vehicleInfoToken', vehicleInfoToken);
   const vehicleHref = `${basePath}/groups?${vehicleParams}`;
 
   return (
@@ -53,6 +63,7 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
           groupsToken={token}
           vin={vin}
           model={model}
+          vehicleInfoToken={vehicleInfoToken}
         />
       </div>
     </div>

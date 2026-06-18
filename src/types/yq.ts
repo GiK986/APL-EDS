@@ -126,6 +126,12 @@ export interface VehicleListResponseV2 {
   error?: ErrorDtoV2;
 }
 
+export interface VehicleResponseV2 {
+  dataType: string;
+  data: VehicleV2Dto;
+  error?: ErrorDtoV2;
+}
+
 export interface OperationFormResponseV2 {
   dataType: string;
   data: FormV2Dto;

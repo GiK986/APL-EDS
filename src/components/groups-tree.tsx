@@ -13,9 +13,18 @@ interface GroupsTreeProps {
   groupsToken?: string;
   vin?: string;
   model?: string;
+  vehicleInfoToken?: string;
 }
 
-export function GroupsTree({ tree, brand, basePath, groupsToken, vin, model }: GroupsTreeProps) {
+export function GroupsTree({
+  tree,
+  brand,
+  basePath,
+  groupsToken,
+  vin,
+  model,
+  vehicleInfoToken,
+}: GroupsTreeProps) {
   const [selected, setSelected] = useState<GroupNodeV2Dto | null>(
     tree.children?.[0] ?? null
   );
@@ -62,6 +71,7 @@ export function GroupsTree({ tree, brand, basePath, groupsToken, vin, model }: G
                   groupsToken={groupsToken}
                   vin={vin}
                   model={model}
+                  vehicleInfoToken={vehicleInfoToken}
                   mainGroupName={selected.name}
                 />
               </div>
@@ -76,6 +86,7 @@ export function GroupsTree({ tree, brand, basePath, groupsToken, vin, model }: G
                     groupsToken={groupsToken}
                     vin={vin}
                     model={model}
+                    vehicleInfoToken={vehicleInfoToken}
                     mainGroupName={selected.name}
                   />
                 </li>
@@ -95,6 +106,7 @@ interface SubGroupItemProps {
   groupsToken?: string;
   vin?: string;
   model?: string;
+  vehicleInfoToken?: string;
   mainGroupName?: string;
 }
 
@@ -105,6 +117,7 @@ function SubGroupItem({
   groupsToken,
   vin,
   model,
+  vehicleInfoToken,
   mainGroupName,
 }: SubGroupItemProps) {
   const partsLink = group.links?.find((l) => l.action === 'getGroupParts');
@@ -121,6 +134,7 @@ function SubGroupItem({
     if (groupsToken) params.set('groupsToken', groupsToken);
     if (vin) params.set('vin', vin);
     if (model) params.set('model', model);
+    if (vehicleInfoToken) params.set('vehicleInfoToken', vehicleInfoToken);
     if (mainGroupName) params.set('group', mainGroupName);
     params.set('subgroup', group.name);
     const href = `${basePath}/groups/parts?${params}`;
@@ -150,6 +164,7 @@ function SubGroupItem({
                 groupsToken={groupsToken}
                 vin={vin}
                 model={model}
+                vehicleInfoToken={vehicleInfoToken}
                 mainGroupName={mainGroupName}
               />
             </li>

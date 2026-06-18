@@ -22,6 +22,7 @@ function buildPartsHref(
   groupsToken: string,
   vin: string | undefined,
   model: string | undefined,
+  vehicleInfoToken: string | undefined,
   mainGroupName: string | undefined
 ): string | undefined {
   const link = leaf.links?.find((l) => l.action === 'getGroupParts');
@@ -29,6 +30,7 @@ function buildPartsHref(
   const params = new URLSearchParams({ token: link.token, groupsToken });
   if (vin) params.set('vin', vin);
   if (model) params.set('model', model);
+  if (vehicleInfoToken) params.set('vehicleInfoToken', vehicleInfoToken);
   if (mainGroupName) params.set('group', mainGroupName);
   params.set('subgroup', leaf.name);
   return `/catalog/${brand}/groups/parts?${params}`;
@@ -41,16 +43,15 @@ interface PageProps {
     groupsToken?: string;
     vin?: string;
     model?: string;
+    vehicleInfoToken?: string;
     group?: string;
     subgroup?: string;
   }>;
 }
 
 export default async function PartsPage({ params, searchParams }: PageProps) {
-  const [{ brand }, { token, groupsToken, vin, model, group, subgroup }] = await Promise.all([
-    params,
-    searchParams,
-  ]);
+  const [{ brand }, { token, groupsToken, vin, model, vehicleInfoToken, group, subgroup }] =
+    await Promise.all([params, searchParams]);
   const lang = (await getLang()) as Lang;
 
   if (!token) return notFound();
@@ -91,8 +92,12 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
             current.code && current.name && current.name !== current.code
               ? `${current.code} — ${current.name}`
               : current.code || current.name,
-          prevHref: prev ? buildPartsHref(brand, prev, groupsToken, vin, model, group) : undefined,
-          nextHref: next ? buildPartsHref(brand, next, groupsToken, vin, model, group) : undefined,
+          prevHref: prev
+            ? buildPartsHref(brand, prev, groupsToken, vin, model, vehicleInfoToken, group)
+            : undefined,
+          nextHref: next
+            ? buildPartsHref(brand, next, groupsToken, vin, model, vehicleInfoToken, group)
+            : undefined,
         };
         allPartsToken = current.links?.find((l) => l.action === 'getGroupPartsAll')?.token;
       }
@@ -108,6 +113,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
   if (groupsToken) groupsParams.set('token', groupsToken);
   if (vin) groupsParams.set('vin', vin);
   if (model) groupsParams.set('model', model);
+  if (vehicleInfoToken) groupsParams.set('vehicleInfoToken', vehicleInfoToken);
   const groupsHref = `/catalog/${brand}/groups${groupsParams.toString() ? `?${groupsParams}` : ''}`;
 
   return (

@@ -12,6 +12,7 @@ import type {
   PartsListByCategoryResponseV2,
   UnitInfoResponseV2,
   PartReferencesResponseV2,
+  VehicleResponseV2,
   FormValueV2,
 } from '@/types/yq';
 
@@ -143,6 +144,18 @@ export async function getGroupPartsAll(
 ): Promise<PartsListByCategoryResponseV2> {
   return yqFetch<PartsListByCategoryResponseV2>(
     '/restApi/v2/getGroupPartsAll',
+    { token, filterValues, currentFilterState },
+    await lang()
+  );
+}
+
+export async function getVehicleInfo(
+  token: string,
+  filterValues: FormValueV2[] = [],
+  currentFilterState = ''
+): Promise<VehicleResponseV2> {
+  return yqFetch<VehicleResponseV2>(
+    '/restApi/v2/getVehicleInfo',
     { token, filterValues, currentFilterState },
     await lang()
   );
