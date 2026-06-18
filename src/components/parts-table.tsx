@@ -348,8 +348,8 @@ function UnitPanel({
                 />
                 {natural &&
                   imageMap?.areas.map((area, areaIndex) => {
-                    const isActive =
-                      area.areaCode === hoveredCode || area.areaCode === selectedCode;
+                    const isSelected = area.areaCode === selectedCode;
+                    const isHovered = area.areaCode === hoveredCode;
                     return (
                       <button
                         key={`${area.areaCode}-${areaIndex}`}
@@ -359,9 +359,11 @@ function UnitPanel({
                         onClick={() => toggleAreaCode(area.areaCode)}
                         className={cn(
                           'absolute border-2 transition-colors',
-                          isActive
-                            ? 'border-primary bg-primary/25'
-                            : 'border-transparent hover:border-primary/60 hover:bg-primary/10'
+                          isSelected
+                            ? 'border-[rgba(247,196,0,0.7)] bg-[rgba(247,196,0,0.35)]'
+                            : isHovered
+                              ? 'border-[#C9A930] bg-[rgba(247,196,0,0.8)]'
+                              : 'border-transparent'
                         )}
                         style={{
                           left: `${(area.x1 / natural.w) * 100}%`,
