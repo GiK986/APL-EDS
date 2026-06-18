@@ -8,6 +8,7 @@ import { cleanText, cn } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns } from '@/lib/attr-columns';
 import { t, type Lang } from '@/lib/i18n';
 import { getUnits } from '@/actions/yq';
+import { Breadcrumb, type BreadcrumbSegment } from '@/components/catalog/breadcrumb';
 import type { GroupNodeV2Dto, UnitShortV2Dto } from '@/types/yq';
 
 type TreeView = 'groups' | 'categories';
@@ -23,6 +24,7 @@ interface GroupsTreeProps {
   model?: string;
   vehicleInfoToken?: string;
   initialGroup?: string;
+  breadcrumbSegments: BreadcrumbSegment[];
   lang: Lang;
 }
 
@@ -63,6 +65,7 @@ export function GroupsTree({
   model,
   vehicleInfoToken,
   initialGroup,
+  breadcrumbSegments,
   lang,
 }: GroupsTreeProps) {
   const [selected, setSelected] = useState<GroupNodeV2Dto | null>(
@@ -98,103 +101,112 @@ export function GroupsTree({
 
   return (
     <div>
-      {groupsToken && categoriesToken && (
-        <div className="mb-3 inline-flex rounded-lg border border-border bg-muted/30 p-1">
-          <Link
-            href={groupsHref ?? '#'}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              view === 'groups'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {t('groups', lang)}
-          </Link>
-          <Link
-            href={categoriesHref ?? '#'}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              view === 'categories'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {t('categories', lang)}
-          </Link>
-        </div>
-      )}
+      <Breadcrumb
+        segments={[
+          ...breadcrumbSegments,
+          ...(selected ? [{ label: selected.name }] : []),
+        ]}
+      />
 
-      <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border">
-        {/* Left panel: top-level groups */}
-        <div className="w-56 shrink-0 overflow-y-auto border-r border-border bg-muted/30">
-          <ul className="py-1">
-            {topGroups.map((group, i) => (
-              <li key={group.token ?? group.name ?? i}>
-                <button
-                  onClick={() => setSelected(group)}
-                  className={cn(
-                    'w-full px-3 py-2.5 text-left text-sm transition-colors',
-                    selected === group
-                      ? 'bg-primary/10 font-medium text-primary'
-                      : 'hover:bg-muted text-foreground'
+      <div className="mt-4">
+        {groupsToken && categoriesToken && (
+          <div className="mb-3 inline-flex rounded-lg border border-border bg-muted/30 p-1">
+            <Link
+              href={groupsHref ?? '#'}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                view === 'groups'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {t('groups', lang)}
+            </Link>
+            <Link
+              href={categoriesHref ?? '#'}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                view === 'categories'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {t('categories', lang)}
+            </Link>
+          </div>
+        )}
+
+        <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border">
+          {/* Left panel: top-level groups */}
+          <div className="w-56 shrink-0 overflow-y-auto border-r border-border bg-muted/30">
+            <ul className="py-1">
+              {topGroups.map((group, i) => (
+                <li key={group.token ?? group.name ?? i}>
+                  <button
+                    onClick={() => setSelected(group)}
+                    className={cn(
+                      'w-full px-3 py-2.5 text-left text-sm transition-colors',
+                      selected === group
+                        ? 'bg-primary/10 font-medium text-primary'
+                        : 'hover:bg-muted text-foreground'
+                    )}
+                  >
+                    {group.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Right panel: sub-groups */}
+          <div className="flex-1 overflow-y-auto">
+            {selected && (
+              <div>
+                <div className="border-b border-border px-4 py-3">
+                  <h2 className="font-semibold">{selected.name}</h2>
+                </div>
+                {subGroups.length === 0 &&
+                  selected.links?.some(
+                    (l) => l.action === 'getGroupParts' || l.action === 'getUnits'
+                  ) && (
+                    <div className="p-4">
+                      <SubGroupItem
+                        group={selected}
+                        brand={brand}
+                        basePath={basePath}
+                        groupsToken={activeToken}
+                        otherToken={otherToken}
+                        view={view}
+                        vin={vin}
+                        model={model}
+                        vehicleInfoToken={vehicleInfoToken}
+                        mainGroupName={selected.name}
+                        lang={lang}
+                      />
+                    </div>
                   )}
-                >
-                  {group.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Right panel: sub-groups */}
-        <div className="flex-1 overflow-y-auto">
-          {selected && (
-            <div>
-              <div className="border-b border-border px-4 py-3">
-                <h2 className="font-semibold">{selected.name}</h2>
+                <ul className="divide-y divide-border">
+                  {subGroups.map((sub, i) => (
+                    <li key={sub.token ?? sub.name ?? i} className="px-4 py-2">
+                      <SubGroupItem
+                        group={sub}
+                        brand={brand}
+                        basePath={basePath}
+                        groupsToken={activeToken}
+                        otherToken={otherToken}
+                        view={view}
+                        vin={vin}
+                        model={model}
+                        vehicleInfoToken={vehicleInfoToken}
+                        mainGroupName={selected.name}
+                        lang={lang}
+                      />
+                    </li>
+                  ))}
+                </ul>
               </div>
-              {subGroups.length === 0 &&
-                selected.links?.some(
-                  (l) => l.action === 'getGroupParts' || l.action === 'getUnits'
-                ) && (
-                  <div className="p-4">
-                    <SubGroupItem
-                      group={selected}
-                      brand={brand}
-                      basePath={basePath}
-                      groupsToken={activeToken}
-                      otherToken={otherToken}
-                      view={view}
-                      vin={vin}
-                      model={model}
-                      vehicleInfoToken={vehicleInfoToken}
-                      mainGroupName={selected.name}
-                      lang={lang}
-                    />
-                  </div>
-                )}
-              <ul className="divide-y divide-border">
-                {subGroups.map((sub, i) => (
-                  <li key={sub.token ?? sub.name ?? i} className="px-4 py-2">
-                    <SubGroupItem
-                      group={sub}
-                      brand={brand}
-                      basePath={basePath}
-                      groupsToken={activeToken}
-                      otherToken={otherToken}
-                      view={view}
-                      vin={vin}
-                      model={model}
-                      vehicleInfoToken={vehicleInfoToken}
-                      mainGroupName={selected.name}
-                      lang={lang}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

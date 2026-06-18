@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getGroups, getNavigationTree, getLang } from '@/actions/yq';
 import { GroupsTree } from '@/components/groups-tree';
-import { Breadcrumb } from '@/components/catalog/breadcrumb';
+import type { BreadcrumbSegment } from '@/components/catalog/breadcrumb';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
 
@@ -47,36 +47,33 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
   if (vehicleInfoToken) vehicleParams.set('vehicleInfoToken', vehicleInfoToken);
   const vehicleHref = `${basePath}/groups?${vehicleParams}`;
 
+  const breadcrumbSegments: BreadcrumbSegment[] = [
+    { label: t('start', lang), href: '/' },
+    {
+      label: brandLabel,
+      href: `/catalog/${brand}${navToken ? `?token=${encodeURIComponent(navToken)}` : ''}`,
+    },
+    ...(vin ? [{ label: vin, href: vehicleHref }] : []),
+    { label: model || t('groups', lang), href: vehicleHref },
+  ];
+
   return (
     <div className="px-4 py-4 sm:px-6">
-      <Breadcrumb
-        segments={[
-          { label: t('start', lang), href: '/' },
-          {
-            label: brandLabel,
-            href: `/catalog/${brand}${navToken ? `?token=${encodeURIComponent(navToken)}` : ''}`,
-          },
-          ...(vin ? [{ label: vin, href: vehicleHref }] : []),
-          { label: model || t('groups', lang) },
-        ]}
+      <GroupsTree
+        key={view}
+        tree={treeRes.data}
+        brand={brand}
+        basePath={basePath}
+        view={view}
+        groupsToken={token}
+        categoriesToken={navToken}
+        vin={vin}
+        model={model}
+        vehicleInfoToken={vehicleInfoToken}
+        initialGroup={group}
+        breadcrumbSegments={breadcrumbSegments}
+        lang={lang}
       />
-
-      <div className="mt-4">
-        <GroupsTree
-          key={view}
-          tree={treeRes.data}
-          brand={brand}
-          basePath={basePath}
-          view={view}
-          groupsToken={token}
-          categoriesToken={navToken}
-          vin={vin}
-          model={model}
-          vehicleInfoToken={vehicleInfoToken}
-          initialGroup={group}
-          lang={lang}
-        />
-      </div>
     </div>
   );
 }
