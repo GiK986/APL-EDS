@@ -136,6 +136,18 @@ export async function getGroupParts(
   );
 }
 
+export async function getGroupPartsAll(
+  token: string,
+  filterValues: FormValueV2[] = [],
+  currentFilterState = ''
+): Promise<PartsListByCategoryResponseV2> {
+  return yqFetch<PartsListByCategoryResponseV2>(
+    '/restApi/v2/getGroupPartsAll',
+    { token, filterValues, currentFilterState },
+    await lang()
+  );
+}
+
 export async function getUnitInfo(
   token: string,
   filterValues: FormValueV2[] = [],

@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Layers, Minus, Plus, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getGroupPartsAll } from '@/actions/yq';
 import type {
   CategoryV2Dto,
   PartSectionV2Dto,
@@ -25,14 +26,62 @@ const DEFAULT_SPLIT = 42;
 interface PartsTableProps {
   categories: CategoryV2Dto[];
   unitInfoMap: Record<string, UnitInfoV2Dto>;
+  allPartsToken?: string;
   lang: Lang;
 }
 
-export function PartsTable({ categories, unitInfoMap, lang }: PartsTableProps) {
+export function PartsTable({ categories, unitInfoMap, allPartsToken, lang }: PartsTableProps) {
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [expandedUnitData, setExpandedUnitData] = useState<PartsByUnitV2Dto | null>(null);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+
+  async function handleShowAll(key: string, unitCode?: string) {
+    if (!allPartsToken) return;
+    setLoadingKey(key);
+    const res = await getGroupPartsAll(allPartsToken);
+    setLoadingKey(null);
+    if (res.error || !res.data) return;
+    const allUnits = res.data.categories.flatMap((c) => c.units);
+    const match = allUnits.find((u) => u.unit.code === unitCode) ?? allUnits[0];
+    if (match) {
+      setExpandedUnitData(match);
+      setExpandedKey(key);
+    }
+  }
+
   if (categories.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border">
         <p className="text-sm text-muted-foreground">{t('noResults', lang)}</p>
+      </div>
+    );
+  }
+
+  if (expandedKey && expandedUnitData) {
+    return (
+      <div className="flex h-[80vh] flex-col">
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-medium">{expandedUnitData.unit.name}</h3>
+            {expandedUnitData.unit.code && (
+              <p className="text-xs text-muted-foreground">
+                {t('unitLabel', lang)}: {expandedUnitData.unit.code}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setExpandedKey(null);
+              setExpandedUnitData(null);
+            }}
+            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t('back', lang)}
+          </button>
+        </div>
+        <UnitPanel unitData={expandedUnitData} unitInfo={unitInfoMap[expandedKey]} lang={lang} fullHeight />
       </div>
     );
   }
@@ -50,14 +99,20 @@ export function PartsTable({ categories, unitInfoMap, lang }: PartsTableProps) {
             )}
           </h2>
 
-          {cat.units.map((unitData, ui) => (
-            <UnitPanel
-              key={unitData.unit.code ?? ui}
-              unitData={unitData}
-              unitInfo={unitInfoMap[`${ci}-${ui}`]}
-              lang={lang}
-            />
-          ))}
+          {cat.units.map((unitData, ui) => {
+            const key = `${ci}-${ui}`;
+            return (
+              <UnitPanel
+                key={unitData.unit.code ?? ui}
+                unitData={unitData}
+                unitInfo={unitInfoMap[key]}
+                lang={lang}
+                canShowAll={!!allPartsToken}
+                isLoadingAll={loadingKey === key}
+                onShowAll={() => handleShowAll(key, unitData.unit.code)}
+              />
+            );
+          })}
         </div>
       ))}
     </div>
@@ -68,9 +123,21 @@ interface UnitPanelProps {
   unitData: PartsByUnitV2Dto;
   unitInfo?: UnitInfoV2Dto;
   lang: Lang;
+  fullHeight?: boolean;
+  canShowAll?: boolean;
+  isLoadingAll?: boolean;
+  onShowAll?: () => void;
 }
 
-function UnitPanel({ unitData, unitInfo, lang }: UnitPanelProps) {
+function UnitPanel({
+  unitData,
+  unitInfo,
+  lang,
+  fullHeight,
+  canShowAll,
+  isLoadingAll,
+  onShowAll,
+}: UnitPanelProps) {
   const [hoveredCode, setHoveredCode] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [splitPct, setSplitPct] = useState(DEFAULT_SPLIT);
@@ -214,11 +281,25 @@ function UnitPanel({ unitData, unitInfo, lang }: UnitPanelProps) {
             </p>
           )}
         </div>
+        {canShowAll && onShowAll && (
+          <button
+            type="button"
+            onClick={onShowAll}
+            disabled={isLoadingAll}
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-50"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            {isLoadingAll ? t('loadingAllParts', lang) : t('showAllParts', lang)}
+          </button>
+        )}
       </div>
 
       <div
         ref={containerRef}
-        className="flex h-[480px] overflow-hidden rounded-xl border border-border"
+        className={cn(
+          'flex overflow-hidden rounded-xl border border-border',
+          fullHeight ? 'flex-1' : 'h-[480px]'
+        )}
       >
         {/* Diagram pane */}
         <div

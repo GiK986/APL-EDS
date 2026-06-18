@@ -48,6 +48,8 @@ const translations = {
     zoomOut: 'Zoom out',
     resetZoom: 'Reset zoom',
     noDiagram: 'No diagram available',
+    showAllParts: 'Show all parts for this diagram',
+    loadingAllParts: 'Loading all parts…',
   },
   bg: {
     appTitle: 'OEM Каталог за части',
@@ -96,6 +98,8 @@ const translations = {
     zoomOut: 'Намали',
     resetZoom: 'Възстанови мащаба',
     noDiagram: 'Няма налична диаграма',
+    showAllParts: 'Покажи всички части за тази диаграма',
+    loadingAllParts: 'Зареждане на всички части…',
   },
 } as const;
 

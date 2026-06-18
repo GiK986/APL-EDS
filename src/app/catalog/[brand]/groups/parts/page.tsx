@@ -75,6 +75,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
   }
 
   let diagramNav: { label: string; prevHref?: string; nextHref?: string } | undefined;
+  let allPartsToken: string | undefined;
   if (groupsToken && group) {
     const groupsRes = await getGroups(groupsToken);
     const mainGroupNode = groupsRes.data?.children?.find((g) => g.name === group);
@@ -93,6 +94,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
           prevHref: prev ? buildPartsHref(brand, prev, groupsToken, vin, model, group) : undefined,
           nextHref: next ? buildPartsHref(brand, next, groupsToken, vin, model, group) : undefined,
         };
+        allPartsToken = current.links?.find((l) => l.action === 'getGroupPartsAll')?.token;
       }
     }
   }
@@ -130,6 +132,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
         <PartsTable
           categories={partsRes.data.categories}
           unitInfoMap={unitInfoMap}
+          allPartsToken={allPartsToken}
           lang={lang}
         />
       </div>
