@@ -251,7 +251,10 @@ function SubGroupItem({
     );
   }
 
-  if (unitsLink) {
+  // Children take priority: some nodes (e.g. "Disc Brake") carry both a
+  // direct getGroupParts link AND children — drilling into the children
+  // must win, or the children are silently dropped.
+  if (!hasChildren && unitsLink) {
     return (
       <CategoryUnitsList
         token={unitsLink.token}
@@ -267,7 +270,7 @@ function SubGroupItem({
     );
   }
 
-  if (partsLink) {
+  if (!hasChildren && partsLink) {
     const params = new URLSearchParams({ token: partsLink.token });
     if (groupsToken) params.set('groupsToken', groupsToken);
     if (otherToken) params.set('otherToken', otherToken);
@@ -289,7 +292,7 @@ function SubGroupItem({
     );
   }
 
-  // Has sub-children, no direct parts link
+  // Has sub-children
   return (
     <div className="space-y-1">
       <span className="text-sm font-medium">{group.name}</span>
