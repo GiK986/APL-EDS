@@ -80,6 +80,23 @@ export function GroupsTree({
   const activeToken = view === 'categories' ? categoriesToken : groupsToken;
   const otherToken = view === 'categories' ? groupsToken : categoriesToken;
 
+  const selectedPartsLink = selected?.links?.find((l) => l.action === 'getGroupParts');
+  const selectedHeaderHref =
+    selected && subGroups.length > 0 && selectedPartsLink
+      ? buildSubGroupPartsHref(
+          basePath,
+          selectedPartsLink.token,
+          selected.name,
+          activeToken,
+          otherToken,
+          view,
+          vin,
+          model,
+          vehicleInfoToken,
+          selected.name
+        )
+      : undefined;
+
   const groupsHref = buildViewHref(
     basePath,
     'groups',
@@ -163,7 +180,19 @@ export function GroupsTree({
             {selected && (
               <div>
                 <div className="border-b border-border px-4 py-3">
-                  <h2 className="font-semibold">{selected.name}</h2>
+                  <h2 className="font-semibold">
+                    {selectedHeaderHref ? (
+                      <Link
+                        href={selectedHeaderHref}
+                        className="flex items-center justify-between hover:underline"
+                      >
+                        <span>{selected.name}</span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </Link>
+                    ) : (
+                      selected.name
+                    )}
+                  </h2>
                 </div>
                 {subGroups.length === 0 &&
                   selected.links?.some(
@@ -211,6 +240,30 @@ export function GroupsTree({
       </div>
     </div>
   );
+}
+
+function buildSubGroupPartsHref(
+  basePath: string,
+  partsToken: string,
+  groupName: string,
+  groupsToken: string | undefined,
+  otherToken: string | undefined,
+  view: TreeView,
+  vin: string | undefined,
+  model: string | undefined,
+  vehicleInfoToken: string | undefined,
+  mainGroupName: string | undefined
+): string {
+  const params = new URLSearchParams({ token: partsToken });
+  if (groupsToken) params.set('groupsToken', groupsToken);
+  if (otherToken) params.set('otherToken', otherToken);
+  if (view === 'categories') params.set('view', view);
+  if (vin) params.set('vin', vin);
+  if (model) params.set('model', model);
+  if (vehicleInfoToken) params.set('vehicleInfoToken', vehicleInfoToken);
+  if (mainGroupName) params.set('group', mainGroupName);
+  params.set('subgroup', groupName);
+  return `${basePath}/groups/parts?${params}`;
 }
 
 interface SubGroupItemProps {
@@ -271,16 +324,18 @@ function SubGroupItem({
   }
 
   if (!hasChildren && partsLink) {
-    const params = new URLSearchParams({ token: partsLink.token });
-    if (groupsToken) params.set('groupsToken', groupsToken);
-    if (otherToken) params.set('otherToken', otherToken);
-    if (view === 'categories') params.set('view', view);
-    if (vin) params.set('vin', vin);
-    if (model) params.set('model', model);
-    if (vehicleInfoToken) params.set('vehicleInfoToken', vehicleInfoToken);
-    if (mainGroupName) params.set('group', mainGroupName);
-    params.set('subgroup', group.name);
-    const href = `${basePath}/groups/parts?${params}`;
+    const href = buildSubGroupPartsHref(
+      basePath,
+      partsLink.token,
+      group.name,
+      groupsToken,
+      otherToken,
+      view,
+      vin,
+      model,
+      vehicleInfoToken,
+      mainGroupName
+    );
     return (
       <Link
         href={href}
@@ -292,10 +347,37 @@ function SubGroupItem({
     );
   }
 
-  // Has sub-children
+  // Has sub-children — if the group also carries its own combined parts
+  // link, its name is the link to that combined view (e.g. "Filters",
+  // "Disc Brake"); otherwise it's just a static header.
+  const headerHref = partsLink
+    ? buildSubGroupPartsHref(
+        basePath,
+        partsLink.token,
+        group.name,
+        groupsToken,
+        otherToken,
+        view,
+        vin,
+        model,
+        vehicleInfoToken,
+        mainGroupName
+      )
+    : undefined;
+
   return (
     <div className="space-y-1">
-      <span className="text-sm font-medium">{group.name}</span>
+      {headerHref ? (
+        <Link
+          href={headerHref}
+          className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-muted transition-colors group"
+        >
+          <span>{group.name}</span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        </Link>
+      ) : (
+        <span className="text-sm font-medium">{group.name}</span>
+      )}
       {group.children && (
         <ul className="ml-3 space-y-0.5">
           {group.children.map((child, ci) => (
