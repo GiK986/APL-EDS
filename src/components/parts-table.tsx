@@ -58,6 +58,7 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang }: Par
   }
 
   if (expandedKey && expandedUnitData) {
+    const noteAttr = unitInfoMap[expandedKey]?.attributes?.find((a) => a.code === 'note');
     return (
       <div className="flex h-[80vh] flex-col">
         <div className="mb-3 flex items-center justify-between gap-4">
@@ -66,6 +67,11 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang }: Par
             {expandedUnitData.unit.code && (
               <p className="text-xs text-muted-foreground">
                 {t('unitLabel', lang)}: {expandedUnitData.unit.code}
+              </p>
+            )}
+            {noteAttr && (
+              <p className="mt-0.5 text-xs italic text-muted-foreground">
+                {noteAttr.label}: {noteAttr.values.join(', ')}
               </p>
             )}
           </div>
@@ -266,39 +272,41 @@ function UnitPanel({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-sm font-medium">{unitData.unit.name}</h3>
-          {unitData.unit.code && (
-            <p className="text-xs text-muted-foreground">
-              {t('unitLabel', lang)}: {unitData.unit.code}
-            </p>
-          )}
-          {noteAttr && (
-            <p className="mt-0.5 text-xs italic text-muted-foreground">
-              {noteAttr.label}: {noteAttr.values.join(', ')}
-            </p>
+    <div className={cn('flex flex-col gap-3', fullHeight && 'flex-1 min-h-0')}>
+      {!fullHeight && (
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-medium">{unitData.unit.name}</h3>
+            {unitData.unit.code && (
+              <p className="text-xs text-muted-foreground">
+                {t('unitLabel', lang)}: {unitData.unit.code}
+              </p>
+            )}
+            {noteAttr && (
+              <p className="mt-0.5 text-xs italic text-muted-foreground">
+                {noteAttr.label}: {noteAttr.values.join(', ')}
+              </p>
+            )}
+          </div>
+          {canShowAll && onShowAll && (
+            <button
+              type="button"
+              onClick={onShowAll}
+              disabled={isLoadingAll}
+              className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-50"
+            >
+              <Layers className="h-3.5 w-3.5" />
+              {isLoadingAll ? t('loadingAllParts', lang) : t('showAllParts', lang)}
+            </button>
           )}
         </div>
-        {canShowAll && onShowAll && (
-          <button
-            type="button"
-            onClick={onShowAll}
-            disabled={isLoadingAll}
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-50"
-          >
-            <Layers className="h-3.5 w-3.5" />
-            {isLoadingAll ? t('loadingAllParts', lang) : t('showAllParts', lang)}
-          </button>
-        )}
-      </div>
+      )}
 
       <div
         ref={containerRef}
         className={cn(
           'flex overflow-hidden rounded-xl border border-border',
-          fullHeight ? 'flex-1' : 'h-[480px]'
+          fullHeight ? 'min-h-0 flex-1' : 'h-[480px]'
         )}
       >
         {/* Diagram pane */}
