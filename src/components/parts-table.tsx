@@ -592,15 +592,17 @@ function PartRow({ part, isActive, onHover, onClick, columns, showQty, lang }: P
       <td className="px-3 py-2 font-mono text-xs font-medium">
         <span className="inline-flex items-center gap-1.5">
           {part.partNumberFormatted ?? part.partNumber}
-          <button
-            type="button"
-            onClick={handleCopy}
-            aria-label={t('copyPartNumber', lang)}
-            title={copied ? t('copiedPartNumber', lang) : t('copyPartNumber', lang)}
-            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
-          </button>
+          {part.partNumber && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              aria-label={t('copyPartNumber', lang)}
+              title={copied ? t('copiedPartNumber', lang) : t('copyPartNumber', lang)}
+              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+            </button>
+          )}
         </span>
       </td>
       <td className="px-3 py-2">
