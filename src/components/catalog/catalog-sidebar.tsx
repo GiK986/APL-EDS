@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Car, Search, X } from 'lucide-react';
 import { getVehicleInfo } from '@/actions/yq';
@@ -23,12 +23,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
   const [vehicle, setVehicle] = useState<VehicleV2Dto | null>(null);
   const [loadedToken, setLoadedToken] = useState<string | null>(null);
 
-  function handleToggle() {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
+  useEffect(() => {
     if (!vehicleInfoToken || loadedToken === vehicleInfoToken) return;
     setLoading(true);
     setError(null);
@@ -43,6 +38,11 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
       })
       .catch(() => setError(t('vehicleInfoLoadFailed', lang)))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleInfoToken]);
+
+  function handleToggle() {
+    setOpen((prev) => !prev);
   }
 
   const filterLevel = vehicle?.sysProperties.find((p) => p.code === 'filter_level')?.value;
@@ -58,7 +58,12 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
           onClick={handleToggle}
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-md shadow-sm transition-colors',
-            open ? 'bg-primary/10 text-primary' : 'bg-background text-foreground'
+            filterLevel
+              ? filterLevelFull
+                ? 'bg-green-600/15 text-green-700'
+                : 'bg-amber-500/15 text-amber-700'
+              : 'bg-background text-foreground',
+            open && 'ring-2 ring-primary/40'
           )}
         >
           <Car className="h-5 w-5" />
