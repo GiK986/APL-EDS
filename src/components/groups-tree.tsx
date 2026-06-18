@@ -68,6 +68,7 @@ export function GroupsTree({
   const topGroups = tree.children ?? [];
   const subGroups = selected?.children ?? [];
   const activeToken = view === 'categories' ? categoriesToken : groupsToken;
+  const otherToken = view === 'categories' ? groupsToken : categoriesToken;
 
   const groupsHref = buildViewHref(
     basePath,
@@ -156,6 +157,7 @@ export function GroupsTree({
                       brand={brand}
                       basePath={basePath}
                       groupsToken={activeToken}
+                      otherToken={otherToken}
                       view={view}
                       vin={vin}
                       model={model}
@@ -196,6 +198,7 @@ interface SubGroupItemProps {
   brand: string;
   basePath: string;
   groupsToken?: string;
+  otherToken?: string;
   view: TreeView;
   vin?: string;
   model?: string;
@@ -209,6 +212,7 @@ function SubGroupItem({
   brand,
   basePath,
   groupsToken,
+  otherToken,
   view,
   vin,
   model,
@@ -233,6 +237,7 @@ function SubGroupItem({
         token={unitsLink.token}
         basePath={basePath}
         groupsToken={groupsToken}
+        otherToken={otherToken}
         vin={vin}
         model={model}
         vehicleInfoToken={vehicleInfoToken}
@@ -245,6 +250,7 @@ function SubGroupItem({
   if (partsLink) {
     const params = new URLSearchParams({ token: partsLink.token });
     if (groupsToken) params.set('groupsToken', groupsToken);
+    if (otherToken) params.set('otherToken', otherToken);
     if (view === 'categories') params.set('view', view);
     if (vin) params.set('vin', vin);
     if (model) params.set('model', model);
@@ -276,6 +282,7 @@ function SubGroupItem({
                 brand={brand}
                 basePath={basePath}
                 groupsToken={groupsToken}
+                otherToken={otherToken}
                 view={view}
                 vin={vin}
                 model={model}
@@ -295,6 +302,7 @@ interface CategoryUnitsListProps {
   token: string;
   basePath: string;
   groupsToken?: string;
+  otherToken?: string;
   vin?: string;
   model?: string;
   vehicleInfoToken?: string;
@@ -302,10 +310,22 @@ interface CategoryUnitsListProps {
   lang: Lang;
 }
 
+const unitsRequestCache = new Map<string, Promise<UnitShortV2Dto[]>>();
+
+function fetchUnitsCached(token: string): Promise<UnitShortV2Dto[]> {
+  let cached = unitsRequestCache.get(token);
+  if (!cached) {
+    cached = getUnits(token).then((res) => res.data?.units ?? []);
+    unitsRequestCache.set(token, cached);
+  }
+  return cached;
+}
+
 function CategoryUnitsList({
   token,
   basePath,
   groupsToken,
+  otherToken,
   vin,
   model,
   vehicleInfoToken,
@@ -320,9 +340,9 @@ function CategoryUnitsList({
 
   useEffect(() => {
     let active = true;
-    getUnits(token).then((res) => {
+    fetchUnitsCached(token).then((units) => {
       if (!active) return;
-      setState({ token, units: res.data?.units ?? [] });
+      setState({ token, units });
     });
     return () => {
       active = false;
@@ -358,6 +378,7 @@ function CategoryUnitsList({
           view: 'categories',
         });
         if (groupsToken) params.set('groupsToken', groupsToken);
+        if (otherToken) params.set('otherToken', otherToken);
         if (unit.code) params.set('unitCode', unit.code);
         if (vin) params.set('vin', vin);
         if (model) params.set('model', model);
