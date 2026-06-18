@@ -177,6 +177,7 @@ export function GroupsTree({
                       brand={brand}
                       basePath={basePath}
                       groupsToken={activeToken}
+                      otherToken={otherToken}
                       view={view}
                       vin={vin}
                       model={model}
@@ -314,11 +315,12 @@ interface CategoryUnitsListProps {
 
 const unitsRequestCache = new Map<string, Promise<UnitShortV2Dto[]>>();
 
-function fetchUnitsCached(token: string): Promise<UnitShortV2Dto[]> {
-  let cached = unitsRequestCache.get(token);
+function fetchUnitsCached(token: string, lang: Lang): Promise<UnitShortV2Dto[]> {
+  const cacheKey = `${token}:${lang}`;
+  let cached = unitsRequestCache.get(cacheKey);
   if (!cached) {
     cached = getUnits(token).then((res) => res.data?.units ?? []);
-    unitsRequestCache.set(token, cached);
+    unitsRequestCache.set(cacheKey, cached);
   }
   return cached;
 }
@@ -334,22 +336,27 @@ function CategoryUnitsList({
   mainGroupName,
   lang,
 }: CategoryUnitsListProps) {
-  const [state, setState] = useState<{ token: string; units: UnitShortV2Dto[] | null }>({
+  const [state, setState] = useState<{
+    token: string;
+    lang: Lang;
+    units: UnitShortV2Dto[] | null;
+  }>({
     token,
+    lang,
     units: null,
   });
-  const loading = state.token !== token || state.units === null;
+  const loading = state.token !== token || state.lang !== lang || state.units === null;
 
   useEffect(() => {
     let active = true;
-    fetchUnitsCached(token).then((units) => {
+    fetchUnitsCached(token, lang).then((units) => {
       if (!active) return;
-      setState({ token, units });
+      setState({ token, lang, units });
     });
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, lang]);
 
   if (loading) {
     return <p className="px-2 py-1.5 text-sm text-muted-foreground">{t('loading', lang)}</p>;
