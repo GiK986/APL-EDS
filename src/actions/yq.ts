@@ -11,6 +11,8 @@ import type {
   NavigationTreeResponseV2,
   PartsListByCategoryResponseV2,
   UnitInfoResponseV2,
+  UnitsListResponseV2,
+  PartsSectionsResponseV2,
   PartReferencesResponseV2,
   VehicleResponseV2,
   FormValueV2,
@@ -168,6 +170,30 @@ export async function getUnitInfo(
 ): Promise<UnitInfoResponseV2> {
   return yqFetch<UnitInfoResponseV2>(
     '/restApi/v2/getUnitInfo',
+    { token, filterValues, currentFilterState },
+    await lang()
+  );
+}
+
+export async function getUnits(
+  token: string,
+  filterValues: FormValueV2[] = [],
+  currentFilterState = ''
+): Promise<UnitsListResponseV2> {
+  return yqFetch<UnitsListResponseV2>(
+    '/restApi/v2/getUnits',
+    { token, filterValues, currentFilterState },
+    await lang()
+  );
+}
+
+export async function getUnitParts(
+  token: string,
+  filterValues: FormValueV2[] = [],
+  currentFilterState = ''
+): Promise<PartsSectionsResponseV2> {
+  return yqFetch<PartsSectionsResponseV2>(
+    '/restApi/v2/getUnitParts',
     { token, filterValues, currentFilterState },
     await lang()
   );

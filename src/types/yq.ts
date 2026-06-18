@@ -153,13 +153,7 @@ export interface GroupsTreeResponseV2 {
   error?: ErrorDtoV2;
 }
 
-export interface CategoryNodeV2Dto {
-  token?: string;
-  name: string;
-  code?: string;
-  links?: LinkV2Dto[];
-  children?: CategoryNodeV2Dto[];
-}
+export type CategoryNodeV2Dto = GroupNodeV2Dto;
 
 export interface NavigationTreeResponseV2 {
   dataType: string;
@@ -200,6 +194,28 @@ export interface UnitShortV2Dto {
 export interface PartSectionV2Dto {
   title?: string;
   parts: PartV2Dto[];
+}
+
+export interface UnitShortListV2Dto {
+  units: UnitShortV2Dto[];
+}
+
+export interface UnitsListResponseV2 {
+  dataType: string;
+  data: UnitShortListV2Dto;
+  currentFilterState?: string;
+  error?: ErrorDtoV2;
+}
+
+export interface PartSectionsListV2Dto {
+  partSections: PartSectionV2Dto[];
+}
+
+export interface PartsSectionsResponseV2 {
+  dataType: string;
+  data: PartSectionsListV2Dto;
+  currentFilterState?: string;
+  error?: ErrorDtoV2;
 }
 
 export interface PartsByUnitV2Dto {

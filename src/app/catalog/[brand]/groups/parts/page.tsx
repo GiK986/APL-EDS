@@ -1,10 +1,20 @@
 import { notFound } from 'next/navigation';
-import { getGroupParts, getUnitInfo, getGroups, getLang } from '@/actions/yq';
+import {
+  getGroupParts,
+  getUnitInfo,
+  getGroups,
+  getNavigationTree,
+  getUnits,
+  getUnitParts,
+  getLang,
+} from '@/actions/yq';
 import { PartsTable } from '@/components/parts-table';
 import { Breadcrumb } from '@/components/catalog/breadcrumb';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
-import type { GroupNodeV2Dto, UnitInfoV2Dto } from '@/types/yq';
+import type { CategoryV2Dto, GroupNodeV2Dto, UnitInfoV2Dto, UnitShortV2Dto } from '@/types/yq';
+
+type TreeView = 'groups' | 'categories';
 
 function flattenLeaves(node: GroupNodeV2Dto): GroupNodeV2Dto[] {
   const leaves: GroupNodeV2Dto[] = [];
@@ -23,11 +33,13 @@ function buildPartsHref(
   vin: string | undefined,
   model: string | undefined,
   vehicleInfoToken: string | undefined,
-  mainGroupName: string | undefined
+  mainGroupName: string | undefined,
+  view: TreeView
 ): string | undefined {
   const link = leaf.links?.find((l) => l.action === 'getGroupParts');
   if (!link) return undefined;
   const params = new URLSearchParams({ token: link.token, groupsToken });
+  if (view === 'categories') params.set('view', view);
   if (vin) params.set('vin', vin);
   if (model) params.set('model', model);
   if (vehicleInfoToken) params.set('vehicleInfoToken', vehicleInfoToken);
@@ -36,11 +48,37 @@ function buildPartsHref(
   return `/catalog/${brand}/groups/parts?${params}`;
 }
 
+function buildUnitPartsHref(
+  brand: string,
+  unit: UnitShortV2Dto,
+  unitsToken: string,
+  groupsToken: string | undefined,
+  vin: string | undefined,
+  model: string | undefined,
+  vehicleInfoToken: string | undefined,
+  group: string | undefined
+): string | undefined {
+  const link = unit.links?.find((l) => l.action === 'getUnitParts');
+  if (!link) return undefined;
+  const params = new URLSearchParams({ token: link.token, unitsToken, view: 'categories' });
+  if (groupsToken) params.set('groupsToken', groupsToken);
+  if (unit.code) params.set('unitCode', unit.code);
+  if (vin) params.set('vin', vin);
+  if (model) params.set('model', model);
+  if (vehicleInfoToken) params.set('vehicleInfoToken', vehicleInfoToken);
+  if (group) params.set('group', group);
+  params.set('subgroup', unit.name);
+  return `/catalog/${brand}/groups/parts?${params}`;
+}
+
 interface PageProps {
   params: Promise<{ brand: string }>;
   searchParams: Promise<{
     token?: string;
     groupsToken?: string;
+    unitsToken?: string;
+    unitCode?: string;
+    view?: string;
     vin?: string;
     model?: string;
     vehicleInfoToken?: string;
@@ -50,56 +88,146 @@ interface PageProps {
 }
 
 export default async function PartsPage({ params, searchParams }: PageProps) {
-  const [{ brand }, { token, groupsToken, vin, model, vehicleInfoToken, group, subgroup }] =
-    await Promise.all([params, searchParams]);
+  const [
+    { brand },
+    {
+      token,
+      groupsToken,
+      unitsToken,
+      unitCode,
+      view: viewParam,
+      vin,
+      model,
+      vehicleInfoToken,
+      group,
+      subgroup,
+    },
+  ] = await Promise.all([params, searchParams]);
   const lang = (await getLang()) as Lang;
+  const view: TreeView = viewParam === 'categories' ? 'categories' : 'groups';
+  const isUnitFlow = view === 'categories' && !!unitsToken;
 
   if (!token) return notFound();
 
-  const partsRes = await getGroupParts(token);
-  if (partsRes.error || !partsRes.data) return notFound();
-
-  const unitInfoEntries = await Promise.all(
-    partsRes.data.categories.flatMap((cat, ci) =>
-      cat.units.map(async (unitData, ui) => {
-        const infoLink = unitData.unit.links?.find((l) => l.action === 'getUnitInfo');
-        if (!infoLink) return null;
-        const infoRes = await getUnitInfo(infoLink.token);
-        if (infoRes.error || !infoRes.data) return null;
-        return [`${ci}-${ui}`, infoRes.data] as const;
-      })
-    )
-  );
+  let categories: CategoryV2Dto[];
   const unitInfoMap: Record<string, UnitInfoV2Dto> = {};
-  for (const entry of unitInfoEntries) {
-    if (entry) unitInfoMap[entry[0]] = entry[1];
-  }
-
   let diagramNav: { label: string; prevHref?: string; nextHref?: string } | undefined;
   let allPartsToken: string | undefined;
-  if (groupsToken && group) {
-    const groupsRes = await getGroups(groupsToken);
-    const mainGroupNode = groupsRes.data?.children?.find((g) => g.name === group);
-    if (mainGroupNode) {
-      const leaves = flattenLeaves(mainGroupNode);
-      const idx = leaves.findIndex((l) => l.name === subgroup);
-      if (idx !== -1) {
-        const current = leaves[idx];
-        const prev = idx > 0 ? leaves[idx - 1] : undefined;
-        const next = idx < leaves.length - 1 ? leaves[idx + 1] : undefined;
-        diagramNav = {
-          label:
-            current.code && current.name && current.name !== current.code
-              ? `${current.code} — ${current.name}`
-              : current.code || current.name,
-          prevHref: prev
-            ? buildPartsHref(brand, prev, groupsToken, vin, model, vehicleInfoToken, group)
-            : undefined,
-          nextHref: next
-            ? buildPartsHref(brand, next, groupsToken, vin, model, vehicleInfoToken, group)
-            : undefined,
-        };
-        allPartsToken = current.links?.find((l) => l.action === 'getGroupPartsAll')?.token;
+
+  if (isUnitFlow) {
+    const unitPartsRes = await getUnitParts(token);
+    if (unitPartsRes.error || !unitPartsRes.data) return notFound();
+
+    const unitsRes = await getUnits(unitsToken!);
+    const allUnits = unitsRes.data?.units ?? [];
+    const idx = allUnits.findIndex(
+      (u) =>
+        (unitCode && u.code === unitCode) ||
+        u.links?.some((l) => l.action === 'getUnitParts' && l.token === token)
+    );
+    const currentUnit = idx !== -1 ? allUnits[idx] : undefined;
+
+    const infoLink = currentUnit?.links?.find((l) => l.action === 'getUnitInfo');
+    if (infoLink) {
+      const infoRes = await getUnitInfo(infoLink.token);
+      if (!infoRes.error && infoRes.data) unitInfoMap['0-0'] = infoRes.data;
+    }
+
+    categories = [
+      {
+        category: { code: group ?? '', name: group ?? subgroup ?? '' },
+        units: [
+          {
+            unit: currentUnit ?? { code: unitCode ?? '', name: subgroup ?? '' },
+            partSections: unitPartsRes.data.partSections,
+            imageNames: currentUnit?.imageNames,
+          },
+        ],
+      },
+    ];
+
+    if (idx !== -1) {
+      const current = allUnits[idx];
+      const prev = idx > 0 ? allUnits[idx - 1] : undefined;
+      const next = idx < allUnits.length - 1 ? allUnits[idx + 1] : undefined;
+      diagramNav = {
+        label:
+          current.code && current.name && current.name !== current.code
+            ? `${current.code} — ${current.name}`
+            : current.code || current.name,
+        prevHref: prev
+          ? buildUnitPartsHref(
+              brand,
+              prev,
+              unitsToken!,
+              groupsToken,
+              vin,
+              model,
+              vehicleInfoToken,
+              group
+            )
+          : undefined,
+        nextHref: next
+          ? buildUnitPartsHref(
+              brand,
+              next,
+              unitsToken!,
+              groupsToken,
+              vin,
+              model,
+              vehicleInfoToken,
+              group
+            )
+          : undefined,
+      };
+    }
+  } else {
+    const partsRes = await getGroupParts(token);
+    if (partsRes.error || !partsRes.data) return notFound();
+    categories = partsRes.data.categories;
+
+    const unitInfoEntries = await Promise.all(
+      categories.flatMap((cat, ci) =>
+        cat.units.map(async (unitData, ui) => {
+          const infoLink = unitData.unit.links?.find((l) => l.action === 'getUnitInfo');
+          if (!infoLink) return null;
+          const infoRes = await getUnitInfo(infoLink.token);
+          if (infoRes.error || !infoRes.data) return null;
+          return [`${ci}-${ui}`, infoRes.data] as const;
+        })
+      )
+    );
+    for (const entry of unitInfoEntries) {
+      if (entry) unitInfoMap[entry[0]] = entry[1];
+    }
+
+    if (groupsToken && group) {
+      const groupsRes =
+        view === 'categories'
+          ? await getNavigationTree(groupsToken)
+          : await getGroups(groupsToken);
+      const mainGroupNode = groupsRes.data?.children?.find((g) => g.name === group);
+      if (mainGroupNode) {
+        const leaves = flattenLeaves(mainGroupNode);
+        const idx = leaves.findIndex((l) => l.name === subgroup);
+        if (idx !== -1) {
+          const current = leaves[idx];
+          const prev = idx > 0 ? leaves[idx - 1] : undefined;
+          const next = idx < leaves.length - 1 ? leaves[idx + 1] : undefined;
+          diagramNav = {
+            label:
+              current.code && current.name && current.name !== current.code
+                ? `${current.code} — ${current.name}`
+                : current.code || current.name,
+            prevHref: prev
+              ? buildPartsHref(brand, prev, groupsToken, vin, model, vehicleInfoToken, group, view)
+              : undefined,
+            nextHref: next
+              ? buildPartsHref(brand, next, groupsToken, vin, model, vehicleInfoToken, group, view)
+              : undefined,
+          };
+          allPartsToken = current.links?.find((l) => l.action === 'getGroupPartsAll')?.token;
+        }
       }
     }
   }
@@ -110,7 +238,8 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
     .join(' ');
 
   const groupsParams = new URLSearchParams();
-  if (groupsToken) groupsParams.set('token', groupsToken);
+  if (groupsToken) groupsParams.set(view === 'categories' ? 'navToken' : 'token', groupsToken);
+  if (view === 'categories') groupsParams.set('view', view);
   if (vin) groupsParams.set('vin', vin);
   if (model) groupsParams.set('model', model);
   if (vehicleInfoToken) groupsParams.set('vehicleInfoToken', vehicleInfoToken);
@@ -136,7 +265,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
 
       <div className="mt-4">
         <PartsTable
-          categories={partsRes.data.categories}
+          categories={categories}
           unitInfoMap={unitInfoMap}
           allPartsToken={allPartsToken}
           lang={lang}
