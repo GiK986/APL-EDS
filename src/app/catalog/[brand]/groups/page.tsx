@@ -14,12 +14,15 @@ interface PageProps {
     vin?: string;
     model?: string;
     vehicleInfoToken?: string;
+    group?: string;
   }>;
 }
 
 export default async function GroupsPage({ params, searchParams }: PageProps) {
-  const [{ brand }, { token, navToken, view: viewParam, vin, model, vehicleInfoToken }] =
-    await Promise.all([params, searchParams]);
+  const [
+    { brand },
+    { token, navToken, view: viewParam, vin, model, vehicleInfoToken, group },
+  ] = await Promise.all([params, searchParams]);
   const lang = (await getLang()) as Lang;
   const view = viewParam === 'categories' ? 'categories' : 'groups';
 
@@ -70,6 +73,7 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
           vin={vin}
           model={model}
           vehicleInfoToken={vehicleInfoToken}
+          initialGroup={group}
           lang={lang}
         />
       </div>

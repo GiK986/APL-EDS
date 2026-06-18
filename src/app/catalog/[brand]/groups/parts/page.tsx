@@ -273,6 +273,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
   if (vin) groupsParams.set('vin', vin);
   if (model) groupsParams.set('model', model);
   if (vehicleInfoToken) groupsParams.set('vehicleInfoToken', vehicleInfoToken);
+  if (group) groupsParams.set('group', group);
   const groupsHref = `/catalog/${brand}/groups${groupsParams.toString() ? `?${groupsParams}` : ''}`;
 
   return (

@@ -22,6 +22,7 @@ interface GroupsTreeProps {
   vin?: string;
   model?: string;
   vehicleInfoToken?: string;
+  initialGroup?: string;
   lang: Lang;
 }
 
@@ -61,10 +62,14 @@ export function GroupsTree({
   vin,
   model,
   vehicleInfoToken,
+  initialGroup,
   lang,
 }: GroupsTreeProps) {
   const [selected, setSelected] = useState<GroupNodeV2Dto | null>(
-    tree.children?.[0] ?? null
+    () =>
+      (initialGroup && tree.children?.find((g) => g.name === initialGroup)) ||
+      tree.children?.[0] ||
+      null
   );
 
   const topGroups = tree.children ?? [];
