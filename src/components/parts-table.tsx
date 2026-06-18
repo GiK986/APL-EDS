@@ -327,6 +327,10 @@ function UnitPanel({
                 onPointerDown={handleImagePointerDown}
                 onClickCapture={handleWrapperClickCapture}
               >
+                {/* next/image would resize this server-side, so naturalWidth/naturalHeight
+                    would no longer match the source-pixel space the hotspot area coordinates
+                    (area.x1/y1/x2/y2) are defined in, breaking overlay alignment. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   ref={captureNatural}
                   src={imageSrc}
