@@ -298,6 +298,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
           unitInfoMap={unitInfoMap}
           allPartsToken={allPartsToken}
           lang={lang}
+          tall={isUnitFlow}
         />
       </div>
     </div>

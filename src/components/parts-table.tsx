@@ -28,9 +28,10 @@ interface PartsTableProps {
   unitInfoMap: Record<string, UnitInfoV2Dto>;
   allPartsToken?: string;
   lang: Lang;
+  tall?: boolean;
 }
 
-export function PartsTable({ categories, unitInfoMap, allPartsToken, lang }: PartsTableProps) {
+export function PartsTable({ categories, unitInfoMap, allPartsToken, lang, tall }: PartsTableProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [expandedUnitData, setExpandedUnitData] = useState<PartsByUnitV2Dto | null>(null);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
@@ -93,9 +94,12 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang }: Par
   }
 
   return (
-    <div className="space-y-8">
+    <div className={cn(tall ? 'flex h-[80vh] flex-col gap-8' : 'space-y-8')}>
       {categories.map((cat, ci) => (
-        <div key={cat.category.token ?? ci} className="space-y-4">
+        <div
+          key={cat.category.token ?? ci}
+          className={cn('space-y-4', tall && 'flex min-h-0 flex-1 flex-col')}
+        >
           <h2 className="text-base font-semibold">
             {cat.category.name}
             {cat.category.code && (
@@ -116,6 +120,7 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang }: Par
                 canShowAll={!!allPartsToken}
                 isLoadingAll={loadingKey === key}
                 onShowAll={() => handleShowAll(key, unitData.unit.code)}
+                tall={tall}
               />
             );
           })}
@@ -130,6 +135,7 @@ interface UnitPanelProps {
   unitInfo?: UnitInfoV2Dto;
   lang: Lang;
   fullHeight?: boolean;
+  tall?: boolean;
   canShowAll?: boolean;
   isLoadingAll?: boolean;
   onShowAll?: () => void;
@@ -140,6 +146,7 @@ function UnitPanel({
   unitInfo,
   lang,
   fullHeight,
+  tall,
   canShowAll,
   isLoadingAll,
   onShowAll,
@@ -272,7 +279,7 @@ function UnitPanel({
   }
 
   return (
-    <div className={cn('flex flex-col gap-3', fullHeight && 'flex-1 min-h-0')}>
+    <div className={cn('flex flex-col gap-3', (fullHeight || tall) && 'flex-1 min-h-0')}>
       {!fullHeight && (
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -306,7 +313,7 @@ function UnitPanel({
         ref={containerRef}
         className={cn(
           'flex overflow-hidden rounded-xl border border-border',
-          fullHeight ? 'min-h-0 flex-1' : 'h-[480px]'
+          fullHeight || tall ? 'min-h-0 flex-1' : 'h-[480px]'
         )}
       >
         {/* Diagram pane */}
