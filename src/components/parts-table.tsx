@@ -114,7 +114,7 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang, tall 
             const key = `${ci}-${ui}`;
             return (
               <UnitPanel
-                key={unitData.unit.code ?? ui}
+                key={`${unitData.unit.token ?? unitData.unit.code ?? 'unit'}-${ui}`}
                 unitData={unitData}
                 unitInfo={unitInfoMap[key]}
                 lang={lang}

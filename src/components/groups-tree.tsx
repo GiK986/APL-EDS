@@ -449,7 +449,7 @@ function UnitsTable({
 
           return (
             <tr
-              key={unit.code ?? unit.token ?? ui}
+              key={`${unit.token ?? unit.code ?? 'unit'}-${ui}`}
               onClick={href ? () => router.push(href) : undefined}
               className={cn(
                 'transition-colors',
