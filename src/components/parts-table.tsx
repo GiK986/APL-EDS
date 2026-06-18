@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { CategoryV2Dto, PartV2Dto, PartsByUnitV2Dto, UnitInfoV2Dto } from '@/types/yq';
+import type {
+  CategoryV2Dto,
+  PartSectionV2Dto,
+  PartV2Dto,
+  PartsByUnitV2Dto,
+  UnitInfoV2Dto,
+} from '@/types/yq';
 import { t, type Lang } from '@/lib/i18n';
 
 // Hotspot coordinates from getUnitInfo are expressed in the native pixel
@@ -319,51 +325,133 @@ function UnitPanel({ unitData, unitInfo, lang }: UnitPanelProps) {
         {/* Table pane */}
         <div className="min-w-0 flex-1 overflow-auto">
           {unitData.partSections.map((section, si) => (
-            <div key={si}>
-              {section.title && (
-                <p className="px-3 pt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {section.title}
-                </p>
-              )}
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 border-b border-border bg-muted/50">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground w-10">
-                      {t('position', lang)}
-                    </th>
-                    <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">
-                      {t('partNumber', lang)}
-                    </th>
-                    <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">
-                      {t('partName', lang)}
-                    </th>
-                    <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground w-16">
-                      {t('qty', lang)}
-                    </th>
-                    <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground hidden lg:table-cell">
-                      {t('remarks', lang)}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {section.parts.map((part, pi) => (
-                    <PartRow
-                      key={part.partNumber + pi}
-                      part={part}
-                      isActive={
-                        !!part.areaCode &&
-                        (part.areaCode === hoveredCode || part.areaCode === selectedCode)
-                      }
-                      onHover={setHoveredCode}
-                      onClick={() => toggleAreaCode(part.areaCode)}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PartsSectionTable
+              key={si}
+              section={section}
+              hoveredCode={hoveredCode}
+              selectedCode={selectedCode}
+              onHover={setHoveredCode}
+              onClick={toggleAreaCode}
+              lang={lang}
+            />
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+interface AttrColumn {
+  code: string;
+  label: string;
+}
+
+// Columns are not fixed: each brand exposes a different set of part
+// attributes (e.g. VW: Quantity/Note, Opel: gm_part_number/Range), so the
+// column set is derived per-section from whatever labels are actually
+// present, instead of being hardcoded per brand.
+function computeAttrColumns(parts: PartV2Dto[]): AttrColumn[] {
+  const columns = new Map<string, string>();
+  for (const part of parts) {
+    for (const attr of part.attributes ?? []) {
+      if (attr.code === 'GROUP' || attr.code === 'YEAR_RANGE') continue;
+      if (!columns.has(attr.code)) columns.set(attr.code, attr.label);
+    }
+  }
+  return Array.from(columns, ([code, label]) => ({ code, label }));
+}
+
+function partHasQty(parts: PartV2Dto[]): boolean {
+  return parts.some((p) => p.qty?.note != null || p.qty?.qty != null);
+}
+
+// "Note" values encode multiple sub-fields joined with ';' (e.g.
+// "door;left" or "rear view mirror housing;left;PR:6XN+7Y8+"), so each
+// segment renders on its own line. Other attributes (e.g. BMW's
+// associated_parts) use ';' as ordinary punctuation inside prose, so only
+// Note is split this way.
+function attrCellLines(part: PartV2Dto, code: string): string[] {
+  const matches = part.attributes?.filter((a) => a.code === code) ?? [];
+  return matches.flatMap((attr) =>
+    attr.values.flatMap((v) =>
+      code === 'note'
+        ? v
+            .split(';')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [v]
+    )
+  );
+}
+
+interface PartsSectionTableProps {
+  section: PartSectionV2Dto;
+  hoveredCode: string | null;
+  selectedCode: string | null;
+  onHover: (code: string | null) => void;
+  onClick: (code?: string) => void;
+  lang: Lang;
+}
+
+function PartsSectionTable({
+  section,
+  hoveredCode,
+  selectedCode,
+  onHover,
+  onClick,
+  lang,
+}: PartsSectionTableProps) {
+  const columns = useMemo(() => computeAttrColumns(section.parts), [section.parts]);
+  const showQty = useMemo(() => partHasQty(section.parts), [section.parts]);
+
+  return (
+    <div>
+      {section.title && (
+        <p className="px-3 pt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {section.title}
+        </p>
+      )}
+      <table className="w-full text-sm">
+        <thead className="sticky top-0 border-b border-border bg-muted/50">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground w-10">
+              {t('position', lang)}
+            </th>
+            <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">
+              {t('partNumber', lang)}
+            </th>
+            <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">
+              {t('partName', lang)}
+            </th>
+            {showQty && (
+              <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground w-16">
+                {t('qty', lang)}
+              </th>
+            )}
+            {columns.map((col) => (
+              <th
+                key={col.code}
+                className="px-3 py-2 text-left font-medium text-xs text-muted-foreground hidden lg:table-cell"
+              >
+                {col.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {section.parts.map((part, pi) => (
+            <PartRow
+              key={part.partNumber + pi}
+              part={part}
+              isActive={!!part.areaCode && (part.areaCode === hoveredCode || part.areaCode === selectedCode)}
+              onHover={onHover}
+              onClick={() => onClick(part.areaCode)}
+              columns={columns}
+              showQty={showQty}
+            />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -373,18 +461,11 @@ interface PartRowProps {
   isActive: boolean;
   onHover: (code: string | null) => void;
   onClick: () => void;
+  columns: AttrColumn[];
+  showQty: boolean;
 }
 
-function PartRow({ part, isActive, onHover, onClick }: PartRowProps) {
-  const remarks = useMemo(
-    () =>
-      part.attributes
-        ?.filter((a) => a.code !== 'GROUP' && a.code !== 'YEAR_RANGE')
-        .flatMap((a) => a.values)
-        .join('; '),
-    [part.attributes]
-  );
-
+function PartRow({ part, isActive, onHover, onClick, columns, showQty }: PartRowProps) {
   return (
     <tr
       onMouseEnter={() => part.areaCode && onHover(part.areaCode)}
@@ -406,10 +487,20 @@ function PartRow({ part, isActive, onHover, onClick }: PartRowProps) {
           <div className="text-xs text-muted-foreground">{part.partName}</div>
         )}
       </td>
-      <td className="px-3 py-2 text-center text-xs">{part.qty?.note ?? part.qty?.qty ?? '—'}</td>
-      <td className="px-3 py-2 text-xs text-muted-foreground hidden lg:table-cell">
-        {remarks || '—'}
-      </td>
+      {showQty && (
+        <td className="px-3 py-2 text-center text-xs">{part.qty?.note ?? part.qty?.qty ?? '—'}</td>
+      )}
+      {columns.map((col) => {
+        const lines = attrCellLines(part, col.code);
+        return (
+          <td
+            key={col.code}
+            className="px-3 py-2 text-xs text-muted-foreground hidden lg:table-cell"
+          >
+            {lines.length ? lines.map((line, i) => <div key={i}>{line}</div>) : '—'}
+          </td>
+        );
+      })}
     </tr>
   );
 }
