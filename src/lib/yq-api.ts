@@ -1,5 +1,10 @@
 const YQ_BASE = 'https://oem-api.yqservice.eu';
 
+const ACCEPT_LANGUAGE_LOCALES: Record<string, string> = {
+  bg: 'bg_BG',
+  en: 'en_EN',
+};
+
 export async function yqFetch<T>(
   path: string,
   body?: object,
@@ -13,7 +18,7 @@ export async function yqFetch<T>(
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Basic ${key}`,
-      'Accept-Language': lang,
+      'Accept-Language': ACCEPT_LANGUAGE_LOCALES[lang] ?? lang,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
     cache: 'no-store',
