@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Copy, Layers, Minus, Plus, RotateCcw } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cleanText, cn } from '@/lib/utils';
+import { attrCellLines, computeAttrColumns, type AttrColumn } from '@/lib/attr-columns';
 import { getGroupPartsAll } from '@/actions/yq';
 import type {
   CategoryV2Dto,
@@ -64,7 +65,7 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang, tall 
       <div className="flex h-[80vh] flex-col">
         <div className="mb-3 flex items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-medium">{expandedUnitData.unit.name}</h3>
+            <h3 className="text-sm font-medium">{cleanText(expandedUnitData.unit.name)}</h3>
             {expandedUnitData.unit.code && (
               <p className="text-xs text-muted-foreground">
                 {t('unitLabel', lang)}: {expandedUnitData.unit.code}
@@ -72,7 +73,7 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang, tall 
             )}
             {noteAttr && (
               <p className="mt-0.5 text-xs italic text-muted-foreground">
-                {noteAttr.label}: {noteAttr.values.join(', ')}
+                {noteAttr.label}: {cleanText(noteAttr.values.join(', '))}
               </p>
             )}
           </div>
@@ -101,7 +102,7 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang, tall 
           className={cn('space-y-4', tall && 'flex min-h-0 flex-1 flex-col')}
         >
           <h2 className="text-base font-semibold">
-            {cat.category.name}
+            {cleanText(cat.category.name)}
             {cat.category.code && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 #{cat.category.code}
@@ -283,7 +284,7 @@ function UnitPanel({
       {!fullHeight && (
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-sm font-medium">{unitData.unit.name}</h3>
+            <h3 className="text-sm font-medium">{cleanText(unitData.unit.name)}</h3>
             {unitData.unit.code && (
               <p className="text-xs text-muted-foreground">
                 {t('unitLabel', lang)}: {unitData.unit.code}
@@ -291,7 +292,7 @@ function UnitPanel({
             )}
             {noteAttr && (
               <p className="mt-0.5 text-xs italic text-muted-foreground">
-                {noteAttr.label}: {noteAttr.values.join(', ')}
+                {noteAttr.label}: {cleanText(noteAttr.values.join(', '))}
               </p>
             )}
           </div>
@@ -341,7 +342,7 @@ function UnitPanel({
                 <img
                   ref={captureNatural}
                   src={imageSrc}
-                  alt={unitData.unit.name}
+                  alt={cleanText(unitData.unit.name)}
                   className="absolute inset-0 h-full w-full object-fill"
                   draggable={false}
                   onLoad={(e) => captureNatural(e.currentTarget)}
@@ -443,47 +444,8 @@ function UnitPanel({
   );
 }
 
-interface AttrColumn {
-  code: string;
-  label: string;
-}
-
-// Columns are not fixed: each brand exposes a different set of part
-// attributes (e.g. VW: Quantity/Note, Opel: gm_part_number/Range), so the
-// column set is derived per-section from whatever labels are actually
-// present, instead of being hardcoded per brand.
-function computeAttrColumns(parts: PartV2Dto[]): AttrColumn[] {
-  const columns = new Map<string, string>();
-  for (const part of parts) {
-    for (const attr of part.attributes ?? []) {
-      if (attr.code === 'GROUP' || attr.code === 'YEAR_RANGE') continue;
-      if (!columns.has(attr.code)) columns.set(attr.code, attr.label);
-    }
-  }
-  return Array.from(columns, ([code, label]) => ({ code, label }));
-}
-
 function partHasQty(parts: PartV2Dto[]): boolean {
   return parts.some((p) => p.qty?.note != null || p.qty?.qty != null);
-}
-
-// "Note" values encode multiple sub-fields joined with ';' (e.g.
-// "door;left" or "rear view mirror housing;left;PR:6XN+7Y8+"), so each
-// segment renders on its own line. Other attributes (e.g. BMW's
-// associated_parts) use ';' as ordinary punctuation inside prose, so only
-// Note is split this way.
-function attrCellLines(part: PartV2Dto, code: string): string[] {
-  const matches = part.attributes?.filter((a) => a.code === code) ?? [];
-  return matches.flatMap((attr) =>
-    attr.values.flatMap((v) =>
-      code === 'note'
-        ? v
-            .split(';')
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [v]
-    )
-  );
 }
 
 interface PartsSectionTableProps {
@@ -608,16 +570,16 @@ function PartRow({ part, isActive, onHover, onClick, columns, showQty, lang }: P
         </span>
       </td>
       <td className="px-3 py-2">
-        <div className="font-medium">{part.displayName || part.partName}</div>
+        <div className="font-medium">{cleanText(part.displayName || part.partName)}</div>
         {part.displayName && part.partName !== part.displayName && (
-          <div className="text-xs text-muted-foreground">{part.partName}</div>
+          <div className="text-xs text-muted-foreground">{cleanText(part.partName)}</div>
         )}
       </td>
       {showQty && (
         <td className="px-3 py-2 text-center text-xs">{part.qty?.note ?? part.qty?.qty ?? '—'}</td>
       )}
       {columns.map((col) => {
-        const lines = attrCellLines(part, col.code);
+        const lines = attrCellLines(part.attributes, col.code).map(cleanText);
         return (
           <td
             key={col.code}

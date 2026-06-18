@@ -10,6 +10,7 @@ import {
 } from '@/actions/yq';
 import { PartsTable } from '@/components/parts-table';
 import { Breadcrumb } from '@/components/catalog/breadcrumb';
+import { cleanText } from '@/lib/utils';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
 import type { CategoryV2Dto, GroupNodeV2Dto, UnitInfoV2Dto, UnitShortV2Dto } from '@/types/yq';
@@ -159,8 +160,8 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
       diagramNav = {
         label:
           current.code && current.name && current.name !== current.code
-            ? `${current.code} — ${current.name}`
-            : current.code || current.name,
+            ? `${current.code} — ${cleanText(current.name)}`
+            : current.code || cleanText(current.name),
         prevHref: prev
           ? buildUnitPartsHref(
               brand,
@@ -225,8 +226,8 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
           diagramNav = {
             label:
               current.code && current.name && current.name !== current.code
-                ? `${current.code} — ${current.name}`
-                : current.code || current.name,
+                ? `${current.code} — ${cleanText(current.name)}`
+                : current.code || cleanText(current.name),
             prevHref: prev
               ? buildPartsHref(
                   brand,
@@ -282,13 +283,13 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
           { label: brandLabel, href: `/catalog/${brand}` },
           ...(vin ? [{ label: vin, href: groupsHref }] : []),
           { label: model || t('groups', lang), href: groupsHref },
-          ...(group ? [{ label: group, href: groupsHref }] : []),
+          ...(group ? [{ label: cleanText(group), href: groupsHref }] : []),
           diagramNav
             ? {
                 label: diagramNav.label,
                 nav: { prevHref: diagramNav.prevHref, nextHref: diagramNav.nextHref },
               }
-            : { label: subgroup || t('parts', lang) },
+            : { label: subgroup ? cleanText(subgroup) : t('parts', lang) },
         ]}
       />
 

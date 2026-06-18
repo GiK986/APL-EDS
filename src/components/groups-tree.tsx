@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cleanText, cn } from '@/lib/utils';
+import { attrCellLines, computeAttrColumns } from '@/lib/attr-columns';
 import { t, type Lang } from '@/lib/i18n';
 import { getUnits } from '@/actions/yq';
 import type { GroupNodeV2Dto, UnitShortV2Dto } from '@/types/yq';
@@ -359,46 +361,123 @@ function CategoryUnitsList({
   }
 
   return (
-    <ul className="space-y-0.5">
-      {units.map((unit, ui) => {
-        const partsLink = unit.links?.find((l) => l.action === 'getUnitParts');
-        const label = unit.code ? `${unit.code} — ${unit.name}` : unit.name;
+    <UnitsTable
+      units={units}
+      unitsToken={token}
+      basePath={basePath}
+      groupsToken={groupsToken}
+      otherToken={otherToken}
+      vin={vin}
+      model={model}
+      vehicleInfoToken={vehicleInfoToken}
+      mainGroupName={mainGroupName}
+      lang={lang}
+    />
+  );
+}
 
-        if (!partsLink) {
-          return (
-            <li key={unit.code ?? unit.token ?? ui} className="px-2 py-1.5 text-sm text-muted-foreground">
-              {label}
-            </li>
-          );
-        }
+interface UnitsTableProps {
+  units: UnitShortV2Dto[];
+  unitsToken: string;
+  basePath: string;
+  groupsToken?: string;
+  otherToken?: string;
+  vin?: string;
+  model?: string;
+  vehicleInfoToken?: string;
+  mainGroupName?: string;
+  lang: Lang;
+}
 
-        const params = new URLSearchParams({
-          token: partsLink.token,
-          unitsToken: token,
-          view: 'categories',
-        });
-        if (groupsToken) params.set('groupsToken', groupsToken);
-        if (otherToken) params.set('otherToken', otherToken);
-        if (unit.code) params.set('unitCode', unit.code);
-        if (vin) params.set('vin', vin);
-        if (model) params.set('model', model);
-        if (vehicleInfoToken) params.set('vehicleInfoToken', vehicleInfoToken);
-        if (mainGroupName) params.set('group', mainGroupName);
-        params.set('subgroup', unit.name);
-        const href = `${basePath}/groups/parts?${params}`;
+function UnitsTable({
+  units,
+  unitsToken,
+  basePath,
+  groupsToken,
+  otherToken,
+  vin,
+  model,
+  vehicleInfoToken,
+  mainGroupName,
+  lang,
+}: UnitsTableProps) {
+  const router = useRouter();
+  const columns = useMemo(() => computeAttrColumns(units), [units]);
 
-        return (
-          <li key={unit.code ?? unit.token ?? ui}>
-            <Link
-              href={href}
-              className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-muted transition-colors group"
+  function buildHref(unit: UnitShortV2Dto, partsToken: string): string {
+    const params = new URLSearchParams({
+      token: partsToken,
+      unitsToken,
+      view: 'categories',
+    });
+    if (groupsToken) params.set('groupsToken', groupsToken);
+    if (otherToken) params.set('otherToken', otherToken);
+    if (unit.code) params.set('unitCode', unit.code);
+    if (vin) params.set('vin', vin);
+    if (model) params.set('model', model);
+    if (vehicleInfoToken) params.set('vehicleInfoToken', vehicleInfoToken);
+    if (mainGroupName) params.set('group', mainGroupName);
+    params.set('subgroup', cleanText(unit.name));
+    return `${basePath}/groups/parts?${params}`;
+  }
+
+  return (
+    <table className="w-full text-sm">
+      <thead className="sticky top-0 border-b border-border bg-muted/30">
+        <tr>
+          <th className="px-2 py-1.5 text-left font-medium text-xs text-muted-foreground w-24">
+            {t('unitCode', lang)}
+          </th>
+          <th className="px-2 py-1.5 text-left font-medium text-xs text-muted-foreground">
+            {t('partName', lang)}
+          </th>
+          {columns.map((col) => (
+            <th
+              key={col.code}
+              className="px-2 py-1.5 text-left font-medium text-xs text-muted-foreground hidden lg:table-cell"
             >
-              <span className="font-medium">{label}</span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+              {col.label}
+            </th>
+          ))}
+          <th className="w-8" />
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-border">
+        {units.map((unit, ui) => {
+          const partsLink = unit.links?.find((l) => l.action === 'getUnitParts');
+          const href = partsLink ? buildHref(unit, partsLink.token) : undefined;
+
+          return (
+            <tr
+              key={unit.code ?? unit.token ?? ui}
+              onClick={href ? () => router.push(href) : undefined}
+              className={cn(
+                'transition-colors',
+                href ? 'cursor-pointer hover:bg-muted/60' : 'text-muted-foreground'
+              )}
+            >
+              <td className="px-2 py-1.5 font-mono text-xs">{unit.code}</td>
+              <td className="px-2 py-1.5 font-medium">{cleanText(unit.name)}</td>
+              {columns.map((col) => {
+                const lines = attrCellLines(unit.attributes, col.code).map(cleanText);
+                return (
+                  <td
+                    key={col.code}
+                    className="px-2 py-1.5 text-xs text-muted-foreground hidden lg:table-cell"
+                  >
+                    {lines.length ? lines.map((line, i) => <div key={i}>{line}</div>) : '—'}
+                  </td>
+                );
+              })}
+              <td className="px-2 py-1.5">
+                {href && (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
