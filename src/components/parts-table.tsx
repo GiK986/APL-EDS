@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Layers, Minus, Plus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Layers, Minus, Plus, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getGroupPartsAll } from '@/actions/yq';
 import type {
@@ -548,6 +548,7 @@ function PartsSectionTable({
               onClick={() => onClick(part.areaCode)}
               columns={columns}
               showQty={showQty}
+              lang={lang}
             />
           ))}
         </tbody>
@@ -563,9 +564,19 @@ interface PartRowProps {
   onClick: () => void;
   columns: AttrColumn[];
   showQty: boolean;
+  lang: Lang;
 }
 
-function PartRow({ part, isActive, onHover, onClick, columns, showQty }: PartRowProps) {
+function PartRow({ part, isActive, onHover, onClick, columns, showQty, lang }: PartRowProps) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(part.partNumber);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
   return (
     <tr
       onMouseEnter={() => part.areaCode && onHover(part.areaCode)}
@@ -579,7 +590,18 @@ function PartRow({ part, isActive, onHover, onClick, columns, showQty }: PartRow
     >
       <td className="px-3 py-2 text-center text-xs text-muted-foreground">{part.areaCode}</td>
       <td className="px-3 py-2 font-mono text-xs font-medium">
-        {part.partNumberFormatted ?? part.partNumber}
+        <span className="inline-flex items-center gap-1.5">
+          {part.partNumberFormatted ?? part.partNumber}
+          <button
+            type="button"
+            onClick={handleCopy}
+            aria-label={t('copyPartNumber', lang)}
+            title={copied ? t('copiedPartNumber', lang) : t('copyPartNumber', lang)}
+            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+          </button>
+        </span>
       </td>
       <td className="px-3 py-2">
         <div className="font-medium">{part.displayName || part.partName}</div>

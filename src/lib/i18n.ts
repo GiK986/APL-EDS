@@ -58,6 +58,8 @@ const translations = {
     filterLevelFull: 'Full match — parts are filtered exactly for this VIN.',
     filterLevelPartial:
       'Partial match — diagrams may not be fully filtered for this vehicle. Double-check part selections.',
+    copyPartNumber: 'Copy part number',
+    copiedPartNumber: 'Copied!',
   },
   bg: {
     appTitle: 'OEM Каталог за части',
@@ -116,6 +118,8 @@ const translations = {
     filterLevelFull: 'Пълно съвпадение — частите са филтрирани точно за този VIN.',
     filterLevelPartial:
       'Частично съвпадение — схемите може да не са филтрирани напълно за този автомобил. Проверявайте внимателно избора на части.',
+    copyPartNumber: 'Копирай номера',
+    copiedPartNumber: 'Копирано!',
   },
 } as const;
 
