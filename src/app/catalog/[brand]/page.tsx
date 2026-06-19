@@ -24,22 +24,26 @@ export default async function CatalogPage({ params, searchParams }: PageProps) {
     if (!catalog) return notFound();
     const infoToken = catalog.links[0]?.token ?? catalog.token;
     const infoRes = await getCatalogInfo(infoToken);
-    return renderPage(brand, lang, infoRes.data?.forms ?? []);
+    return renderPage(brand, catalog.name, lang, infoRes.data?.forms ?? []);
   }
 
   const infoRes = await getCatalogInfo(token);
   if (infoRes.error) return notFound();
 
-  return renderPage(brand, lang, infoRes.data?.forms ?? []);
+  return renderPage(brand, infoRes.data?.name, lang, infoRes.data?.forms ?? []);
 }
 
-function renderPage(brand: string, lang: Lang, forms: FormV2Dto[]) {
+function renderPage(brand: string, catalogName: string | undefined, lang: Lang, forms: FormV2Dto[]) {
   const wizardForm = forms.find((f) => f.operationName === 'WIZARD');
 
-  const brandLabel = decodeURIComponent(brand)
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+  // catalog.name (e.g. "Citroen PSA") is the real catalog display name —
+  // only fall back to reconstructing from the URL slug if it's missing.
+  const brandLabel =
+    catalogName ??
+    decodeURIComponent(brand)
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
 
   return (
     <div className="px-4 py-4 sm:px-6">

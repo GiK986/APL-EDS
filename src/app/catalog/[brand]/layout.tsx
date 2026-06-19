@@ -13,10 +13,19 @@ export default async function CatalogLayout({ children, params }: CatalogLayoutP
   const [{ brand }, catalogsRes, lang] = await Promise.all([params, getCatalogs(), getLang()]);
   const catalogs = catalogsRes.data?.catalogs.filter((c) => !c.archived) ?? [];
 
-  const brandLabel = decodeURIComponent(brand)
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+  // catalog.brand (e.g. "CITROEN") only identifies the manufacturer, while
+  // catalog.name (e.g. "Citroen PSA") is what the logo files are named
+  // after — reconstructing the label from the URL slug instead of looking
+  // up the real name left PSA/DS/etc. catalogs with no matching logo file.
+  const matchedCatalog = catalogs.find(
+    (c) => c.brand.toLowerCase().replace(/\s+/g, '-') === decodeURIComponent(brand)
+  );
+  const brandLabel =
+    matchedCatalog?.name ??
+    decodeURIComponent(brand)
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
 
   return (
     <div className="flex min-h-screen flex-col">

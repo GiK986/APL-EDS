@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { X } from 'lucide-react';
+import { getCatalogInfo } from '@/actions/yq';
 import { logoSlug } from '@/lib/logo-slug';
 import { t, type Lang } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,33 @@ interface CatalogHeaderProps {
 
 export function CatalogHeader({ brand, brandLabel, catalogs, lang }: CatalogHeaderProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Some brands (e.g. "Opel" and "Opel (PSA)") share the same catalog.brand,
+  // so the URL's brand slug alone can't tell them apart. catalogs[].token
+  // is also useless here — the YQ API mints a fresh random token on every
+  // catalogs() call, so it never matches the token already baked into the
+  // URL. Resolving the real name requires asking the API directly for the
+  // catalog this exact token points to.
+  const urlToken = searchParams.get('token');
+  const [resolved, setResolved] = useState<{ token: string | null; name: string | null }>({
+    token: null,
+    name: null,
+  });
+
+  useEffect(() => {
+    if (!urlToken) return;
+    let active = true;
+    getCatalogInfo(urlToken).then((res) => {
+      if (active) setResolved({ token: urlToken, name: res.data?.name ?? null });
+    });
+    return () => {
+      active = false;
+    };
+  }, [urlToken]);
+
+  const logoName = (resolved.token === urlToken && resolved.name) || brandLabel;
 
   function handleSelectCatalog(catalog: CatalogV2Dto) {
     const infoToken = catalog.links[0]?.token ?? catalog.token;
@@ -35,7 +62,7 @@ export function CatalogHeader({ brand, brandLabel, catalogs, lang }: CatalogHead
         className="flex items-center gap-2 font-semibold"
         title={t('brandSelection', lang)}
       >
-        <BrandLogo name={brandLabel} className="h-8 w-20" />
+        <BrandLogo name={logoName} className="h-8 w-20" />
       </button>
 
       <VinSearchBox brand={brand} lang={lang} />
