@@ -34,6 +34,8 @@ const translations = {
     unitLabel: 'Unit',
     missingApiKeyHint: 'Add YQ_API_KEY to .env.local to load brands',
     noVehicleFoundWizard: 'No vehicle found for this selection.',
+    noWizardAvailable:
+      'This brand has no step-by-step vehicle search. Use VIN search above or part number search in the sidebar instead.',
     wizardSearchFailed: 'Search failed. Please try again.',
     start: 'Start',
     vehicleIdentification: 'Vehicle identification',
@@ -107,6 +109,8 @@ const translations = {
     unitLabel: 'Възел',
     missingApiKeyHint: 'Добавете YQ_API_KEY в .env.local, за да заредите марките',
     noVehicleFoundWizard: 'Няма намерено превозно средство за тази селекция.',
+    noWizardAvailable:
+      'Тази марка няма стъпка по стъпка търсене на автомобил. Използвайте търсенето по VIN по-горе или по номер на part в страничния панел.',
     wizardSearchFailed: 'Търсенето неуспешно. Опитайте отново.',
     start: 'Начало',
     vehicleIdentification: 'Идентификация на автомобила',

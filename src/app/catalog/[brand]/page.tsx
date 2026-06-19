@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getCatalogInfo, getCatalogs, getLang } from '@/actions/yq';
 import { VehicleWizard } from '@/components/vehicle-wizard';
+import { Breadcrumb } from '@/components/catalog/breadcrumb';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
 import type { FormV2Dto } from '@/types/yq';
@@ -50,7 +51,10 @@ function renderPage(brand: string, lang: Lang, forms: FormV2Dto[]) {
           lang={lang}
         />
       ) : (
-        <p className="text-muted-foreground">{t('noResults', lang)}</p>
+        <div className="space-y-6">
+          <Breadcrumb segments={[{ label: t('start', lang), href: '/' }, { label: brandLabel }]} />
+          <p className="text-muted-foreground">{t('noWizardAvailable', lang)}</p>
+        </div>
       )}
     </div>
   );
