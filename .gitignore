@@ -50,3 +50,6 @@ temp/
 
 # Personal production deploy config (not part of the template)
 docker-compose.prod.yml
+
+# Personal session notes for Claude Code (not part of the template)
+CLAUDE.local.md
