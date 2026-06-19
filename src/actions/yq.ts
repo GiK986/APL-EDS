@@ -209,3 +209,25 @@ export async function findPartReferences(
     await lang()
   );
 }
+
+export async function findApplicableVehicles(
+  token: string,
+  formValues: FormValueV2[]
+): Promise<VehicleListResponseV2> {
+  return yqFetch<VehicleListResponseV2>(
+    '/restApi/v2/findApplicableVehicles',
+    { token, formValues },
+    await lang()
+  );
+}
+
+export async function getPartApplicability(
+  token: string,
+  formValues: FormValueV2[]
+): Promise<PartsListByCategoryResponseV2> {
+  return yqFetch<PartsListByCategoryResponseV2>(
+    '/restApi/v2/getPartApplicability',
+    { token, formValues },
+    await lang()
+  );
+}

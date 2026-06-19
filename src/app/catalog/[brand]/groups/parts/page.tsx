@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import {
   getGroupParts,
+  getPartApplicability,
   getUnitInfo,
   getGroups,
   getNavigationTree,
@@ -16,6 +17,27 @@ import type { Lang } from '@/lib/i18n';
 import type { CategoryV2Dto, GroupNodeV2Dto, UnitInfoV2Dto, UnitShortV2Dto } from '@/types/yq';
 
 type TreeView = 'groups' | 'categories';
+
+async function buildUnitInfoMap(
+  categories: CategoryV2Dto[]
+): Promise<Record<string, UnitInfoV2Dto>> {
+  const unitInfoMap: Record<string, UnitInfoV2Dto> = {};
+  const entries = await Promise.all(
+    categories.flatMap((cat, ci) =>
+      cat.units.map(async (unitData, ui) => {
+        const infoLink = unitData.unit.links?.find((l) => l.action === 'getUnitInfo');
+        if (!infoLink) return null;
+        const infoRes = await getUnitInfo(infoLink.token);
+        if (infoRes.error || !infoRes.data) return null;
+        return [`${ci}-${ui}`, infoRes.data] as const;
+      })
+    )
+  );
+  for (const entry of entries) {
+    if (entry) unitInfoMap[entry[0]] = entry[1];
+  }
+  return unitInfoMap;
+}
 
 function flattenLeaves(node: GroupNodeV2Dto): GroupNodeV2Dto[] {
   const leaves: GroupNodeV2Dto[] = [];
@@ -90,6 +112,10 @@ interface PageProps {
     vehicleInfoToken?: string;
     group?: string;
     subgroup?: string;
+    mode?: string;
+    partToken?: string;
+    partNumber?: string;
+    includeReplacements?: string;
   }>;
 }
 
@@ -108,21 +134,35 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
       vehicleInfoToken,
       group,
       subgroup,
+      mode,
+      partToken,
+      partNumber,
+      includeReplacements,
     },
   ] = await Promise.all([params, searchParams]);
   const lang = (await getLang()) as Lang;
   const view: TreeView = viewParam === 'categories' ? 'categories' : 'groups';
-  const isUnitFlow = view === 'categories' && !!unitsToken;
+  const isApplicabilityFlow = mode === 'applicability';
+  const isUnitFlow = !isApplicabilityFlow && view === 'categories' && !!unitsToken;
 
-  if (!token) return notFound();
+  if (!isApplicabilityFlow && !token) return notFound();
+  if (isApplicabilityFlow && (!partToken || !partNumber)) return notFound();
 
   let categories: CategoryV2Dto[];
-  const unitInfoMap: Record<string, UnitInfoV2Dto> = {};
+  let unitInfoMap: Record<string, UnitInfoV2Dto> = {};
   let diagramNav: { label: string; prevHref?: string; nextHref?: string } | undefined;
   let allPartsToken: string | undefined;
 
-  if (isUnitFlow) {
-    const unitPartsRes = await getUnitParts(token);
+  if (isApplicabilityFlow) {
+    const applicabilityRes = await getPartApplicability(partToken!, [
+      { name: 'PartNumber', value: partNumber! },
+      { name: 'IncludeReplacements', value: includeReplacements ?? 'false' },
+    ]);
+    if (applicabilityRes.error || !applicabilityRes.data) return notFound();
+    categories = applicabilityRes.data.categories;
+    unitInfoMap = await buildUnitInfoMap(categories);
+  } else if (isUnitFlow) {
+    const unitPartsRes = await getUnitParts(token!);
     if (unitPartsRes.error || !unitPartsRes.data) return notFound();
 
     const unitsRes = await getUnits(unitsToken!);
@@ -191,24 +231,10 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
       };
     }
   } else {
-    const partsRes = await getGroupParts(token);
+    const partsRes = await getGroupParts(token!);
     if (partsRes.error || !partsRes.data) return notFound();
     categories = partsRes.data.categories;
-
-    const unitInfoEntries = await Promise.all(
-      categories.flatMap((cat, ci) =>
-        cat.units.map(async (unitData, ui) => {
-          const infoLink = unitData.unit.links?.find((l) => l.action === 'getUnitInfo');
-          if (!infoLink) return null;
-          const infoRes = await getUnitInfo(infoLink.token);
-          if (infoRes.error || !infoRes.data) return null;
-          return [`${ci}-${ui}`, infoRes.data] as const;
-        })
-      )
-    );
-    for (const entry of unitInfoEntries) {
-      if (entry) unitInfoMap[entry[0]] = entry[1];
-    }
+    unitInfoMap = await buildUnitInfoMap(categories);
 
     if (groupsToken && group) {
       const groupsRes =
@@ -290,7 +316,13 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
                 label: diagramNav.label,
                 nav: { prevHref: diagramNav.prevHref, nextHref: diagramNav.nextHref },
               }
-            : { label: subgroup ? cleanText(subgroup) : t('parts', lang) },
+            : {
+                label: isApplicabilityFlow
+                  ? partNumber!
+                  : subgroup
+                    ? cleanText(subgroup)
+                    : t('parts', lang),
+              },
         ]}
       />
 

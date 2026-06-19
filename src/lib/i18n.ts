@@ -61,6 +61,10 @@ const translations = {
       'Partial match — diagrams may not be fully filtered for this vehicle. Double-check part selections.',
     copyPartNumber: 'Copy part number',
     copiedPartNumber: 'Copied!',
+    selectCatalog: 'Select catalog',
+    partNotFound: 'No catalog found for this part number.',
+    noVehiclesForPart: 'No vehicles found for this part.',
+    partSearchFailed: 'Search failed. Please try again.',
   },
   bg: {
     appTitle: 'OEM Каталог за части',
@@ -122,6 +126,10 @@ const translations = {
       'Частично съвпадение — схемите може да не са филтрирани напълно за този автомобил. Проверявайте внимателно избора на части.',
     copyPartNumber: 'Копирай номера',
     copiedPartNumber: 'Копирано!',
+    selectCatalog: 'Изберете каталог',
+    partNotFound: 'Не е намерен каталог за този номер на part.',
+    noVehiclesForPart: 'Няма намерени автомобили за тази част.',
+    partSearchFailed: 'Търсенето неуспешно. Опитайте отново.',
   },
 } as const;
 

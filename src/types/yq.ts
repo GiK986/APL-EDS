@@ -269,15 +269,14 @@ export interface UnitInfoResponseV2 {
   error?: ErrorDtoV2;
 }
 
-export interface PartReferencesV2Dto {
-  brand: string;
-  catalogName: string;
-  token: string;
-  links?: LinkV2Dto[];
+export interface PartReferenceV2Dto {
+  partNumber: string;
+  partName?: string;
+  catalogs: CatalogV2Dto[];
 }
 
 export interface PartReferencesListV2Dto {
-  references: PartReferencesV2Dto[];
+  partReferences: PartReferenceV2Dto[];
 }
 
 export interface PartReferencesResponseV2 {
