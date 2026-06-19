@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Camera } from 'lucide-react';
 import { searchVehicleByVin, searchVehicleByVinGlobal } from '@/actions/yq';
 import { buildVehicleGroupsHref } from '@/lib/vehicle-nav';
+import { ScanVinModal } from '@/components/catalog/scan-vin-modal';
 import { t, type Lang } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { VehicleV2Dto } from '@/types/yq';
@@ -66,7 +67,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
   const [directValue, setDirectValue] = useState('');
   const [directError, setDirectError] = useState<string | null>(null);
   const [directVehicles, setDirectVehicles] = useState<VehicleV2Dto[]>([]);
-  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
   const [recent, setRecent] = useState<RecentVehicle[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -77,7 +78,6 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
     }
   });
   const containerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -168,21 +168,12 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
         <div className="absolute left-0 top-full z-50 mt-1 w-80 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg">
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setScanOpen(true)}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
           >
             <Camera className="h-4 w-4 text-muted-foreground" />
             {t('scanVinFromPhoto', lang)}
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={() => setScanMessage(t('scanComingSoon', lang))}
-          />
-          {scanMessage && <p className="mt-1 px-2 text-xs text-muted-foreground">{scanMessage}</p>}
 
           {directError && <p className="mt-2 px-2 text-xs text-destructive">{directError}</p>}
 
@@ -273,6 +264,16 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
           )}
         </div>
       )}
+
+      <ScanVinModal
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        lang={lang}
+        onConfirm={(scannedVin) => {
+          setDirectValue(scannedVin);
+          runSearch(scannedVin);
+        }}
+      />
     </div>
   );
 }
