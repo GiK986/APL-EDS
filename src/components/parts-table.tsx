@@ -154,6 +154,7 @@ function UnitPanel({
 }: UnitPanelProps) {
   const [hoveredCode, setHoveredCode] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const [splitPct, setSplitPct] = useState(DEFAULT_SPLIT);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -279,6 +280,25 @@ function UnitPanel({
     setSelectedCode((prev) => (prev === code ? null : code));
   }
 
+  function selectAreaFromDiagram(code?: string) {
+    if (!code) return;
+    setSelectedCode((prev) => {
+      const next = prev === code ? null : code;
+      if (next) {
+        requestAnimationFrame(() => {
+          rowRefs.current.get(next)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+      return next;
+    });
+  }
+
+  function registerRowRef(code: string | undefined, el: HTMLTableRowElement | null) {
+    if (!code) return;
+    if (el) rowRefs.current.set(code, el);
+    else rowRefs.current.delete(code);
+  }
+
   return (
     <div className={cn('flex flex-col gap-3', (fullHeight || tall) && 'flex-1 min-h-0')}>
       {!fullHeight && (
@@ -357,7 +377,7 @@ function UnitPanel({
                         type="button"
                         onMouseEnter={() => setHoveredCode(area.areaCode)}
                         onMouseLeave={() => setHoveredCode(null)}
-                        onClick={() => toggleAreaCode(area.areaCode)}
+                        onClick={() => selectAreaFromDiagram(area.areaCode)}
                         className={cn(
                           'absolute border-2 transition-colors',
                           isSelected
@@ -435,6 +455,7 @@ function UnitPanel({
               selectedCode={selectedCode}
               onHover={setHoveredCode}
               onClick={toggleAreaCode}
+              registerRowRef={registerRowRef}
               lang={lang}
             />
           ))}
@@ -454,6 +475,7 @@ interface PartsSectionTableProps {
   selectedCode: string | null;
   onHover: (code: string | null) => void;
   onClick: (code?: string) => void;
+  registerRowRef: (code: string | undefined, el: HTMLTableRowElement | null) => void;
   lang: Lang;
 }
 
@@ -463,6 +485,7 @@ function PartsSectionTable({
   selectedCode,
   onHover,
   onClick,
+  registerRowRef,
   lang,
 }: PartsSectionTableProps) {
   const columns = useMemo(() => computeAttrColumns(section.parts), [section.parts]);
@@ -510,6 +533,7 @@ function PartsSectionTable({
               isActive={!!part.areaCode && (part.areaCode === hoveredCode || part.areaCode === selectedCode)}
               onHover={onHover}
               onClick={() => onClick(part.areaCode)}
+              registerRowRef={registerRowRef}
               columns={columns}
               showQty={showQty}
               lang={lang}
@@ -526,12 +550,22 @@ interface PartRowProps {
   isActive: boolean;
   onHover: (code: string | null) => void;
   onClick: () => void;
+  registerRowRef: (code: string | undefined, el: HTMLTableRowElement | null) => void;
   columns: AttrColumn[];
   showQty: boolean;
   lang: Lang;
 }
 
-function PartRow({ part, isActive, onHover, onClick, columns, showQty, lang }: PartRowProps) {
+function PartRow({
+  part,
+  isActive,
+  onHover,
+  onClick,
+  registerRowRef,
+  columns,
+  showQty,
+  lang,
+}: PartRowProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy(e: React.MouseEvent) {
@@ -543,6 +577,7 @@ function PartRow({ part, isActive, onHover, onClick, columns, showQty, lang }: P
 
   return (
     <tr
+      ref={(el) => registerRowRef(part.areaCode, el)}
       onMouseEnter={() => part.areaCode && onHover(part.areaCode)}
       onMouseLeave={() => onHover(null)}
       onClick={onClick}
