@@ -13,6 +13,8 @@ export async function AppHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/Logo.svg" alt="" className="h-7 w-auto" />
           <span className="text-primary">{t('appTitle', lang)}</span>
         </Link>
 
