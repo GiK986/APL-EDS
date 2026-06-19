@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronRight, Play } from 'lucide-react';
 
 export interface BreadcrumbSegment {
   label: string;
@@ -28,10 +28,10 @@ export function Breadcrumb({ segments }: BreadcrumbProps) {
                   aria-label="Previous diagram"
                   className="rounded p-0.5 transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <Play className="h-3.5 w-3.5 rotate-180" fill="currentColor" />
                 </Link>
               ) : (
-                <ChevronLeft className="h-3.5 w-3.5 opacity-30" />
+                <Play className="h-3.5 w-3.5 rotate-180 opacity-30" fill="currentColor" />
               )}
               <span className="font-medium text-foreground">{seg.label}</span>
               {seg.nav.nextHref ? (
@@ -40,10 +40,10 @@ export function Breadcrumb({ segments }: BreadcrumbProps) {
                   aria-label="Next diagram"
                   className="rounded p-0.5 transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <ChevronRight className="h-3.5 w-3.5" />
+                  <Play className="h-3.5 w-3.5" fill="currentColor" />
                 </Link>
               ) : (
-                <ChevronRight className="h-3.5 w-3.5 opacity-30" />
+                <Play className="h-3.5 w-3.5 opacity-30" fill="currentColor" />
               )}
             </span>
           ) : seg.href ? (
