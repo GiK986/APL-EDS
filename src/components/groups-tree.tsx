@@ -147,7 +147,7 @@ export function GroupsTree({
       />
 
       <div className="mt-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="mb-3 flex items-center gap-3">
           {groupsToken && categoriesToken ? (
             <div className="inline-flex rounded-lg border border-border bg-muted/30 p-1">
               <Link
@@ -184,7 +184,7 @@ export function GroupsTree({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('searchGroupsPlaceholder', lang)}
-              className="w-full rounded-md border border-border bg-background py-1.5 pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border border-border bg-background py-2.5 pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             {query && (
               <button
