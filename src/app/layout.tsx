@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'OEM Parts Catalog',
   description: 'Original equipment manufacturer parts catalog powered by YQ Service',
+  icons: {
+    icon: '/images/Logo.svg',
+    shortcut: '/images/Logo.svg',
+    apple: '/images/Logo.svg',
+  },
 };
 
 export default function RootLayout({
