@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Search, X } from 'lucide-react';
 import { cleanText, cn } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns } from '@/lib/attr-columns';
 import { t, type Lang } from '@/lib/i18n';
@@ -12,6 +12,20 @@ import { Breadcrumb, type BreadcrumbSegment } from '@/components/catalog/breadcr
 import type { GroupNodeV2Dto, UnitShortV2Dto } from '@/types/yq';
 
 type TreeView = 'groups' | 'categories';
+
+// The full groups/categories tree arrives in one API call already fully
+// nested, so name search is a pure client-side filter — no extra requests.
+// A node that matches by name keeps its whole subtree intact (browsing
+// the match); a node that doesn't match keeps only descendants that do.
+function filterTreeNode(node: GroupNodeV2Dto, query: string): GroupNodeV2Dto | null {
+  if (node.name.toLowerCase().includes(query)) return node;
+  if (!node.children?.length) return null;
+  const keptChildren = node.children
+    .map((child) => filterTreeNode(child, query))
+    .filter((child): child is GroupNodeV2Dto => child !== null);
+  if (keptChildren.length === 0) return null;
+  return { ...node, children: keptChildren };
+}
 
 interface GroupsTreeProps {
   tree: GroupNodeV2Dto;
@@ -68,14 +82,21 @@ export function GroupsTree({
   breadcrumbSegments,
   lang,
 }: GroupsTreeProps) {
-  const [selected, setSelected] = useState<GroupNodeV2Dto | null>(
-    () =>
-      (initialGroup && tree.children?.find((g) => g.name === initialGroup)) ||
-      tree.children?.[0] ||
-      null
+  const [query, setQuery] = useState('');
+  const [selectedKey, setSelectedKey] = useState<string | null>(
+    () => initialGroup ?? tree.children?.[0]?.name ?? null
   );
 
-  const topGroups = tree.children ?? [];
+  const normalizedQuery = query.trim().toLowerCase();
+  const topGroups = useMemo(() => {
+    const allTopGroups = tree.children ?? [];
+    if (!normalizedQuery) return allTopGroups;
+    return allTopGroups
+      .map((group) => filterTreeNode(group, normalizedQuery))
+      .filter((group): group is GroupNodeV2Dto => group !== null);
+  }, [tree.children, normalizedQuery]);
+
+  const selected = topGroups.find((g) => g.name === selectedKey) ?? topGroups[0] ?? null;
   const subGroups = selected?.children ?? [];
   const activeToken = view === 'categories' ? categoriesToken : groupsToken;
   const otherToken = view === 'categories' ? groupsToken : categoriesToken;
@@ -126,53 +147,82 @@ export function GroupsTree({
       />
 
       <div className="mt-4">
-        {groupsToken && categoriesToken && (
-          <div className="mb-3 inline-flex rounded-lg border border-border bg-muted/30 p-1">
-            <Link
-              href={groupsHref ?? '#'}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                view === 'groups'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {t('groups', lang)}
-            </Link>
-            <Link
-              href={categoriesHref ?? '#'}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                view === 'categories'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {t('categories', lang)}
-            </Link>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          {groupsToken && categoriesToken ? (
+            <div className="inline-flex rounded-lg border border-border bg-muted/30 p-1">
+              <Link
+                href={groupsHref ?? '#'}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  view === 'groups'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {t('groups', lang)}
+              </Link>
+              <Link
+                href={categoriesHref ?? '#'}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  view === 'categories'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {t('categories', lang)}
+              </Link>
+            </div>
+          ) : (
+            <div />
+          )}
+
+          <div className="relative w-[300px]">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('searchGroupsPlaceholder', lang)}
+              className="w-full rounded-md border border-border bg-background py-1.5 pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label={t('cancel', lang)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border">
           {/* Left panel: top-level groups */}
           <div className="w-56 shrink-0 overflow-y-auto border-r border-border bg-muted/30">
-            <ul className="py-1">
-              {topGroups.map((group, i) => (
-                <li key={group.token ?? group.name ?? i}>
-                  <button
-                    onClick={() => setSelected(group)}
-                    className={cn(
-                      'w-full px-3 py-2.5 text-left text-sm transition-colors',
-                      selected === group
-                        ? 'bg-primary/10 font-medium text-primary'
-                        : 'hover:bg-muted text-foreground'
-                    )}
-                  >
-                    {group.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {topGroups.length === 0 ? (
+              <p className="px-3 py-2.5 text-sm text-muted-foreground">{t('noResults', lang)}</p>
+            ) : (
+              <ul className="py-1">
+                {topGroups.map((group, i) => (
+                  <li key={group.token ?? group.name ?? i}>
+                    <button
+                      onClick={() => setSelectedKey(group.name)}
+                      className={cn(
+                        'w-full px-3 py-2.5 text-left text-sm transition-colors',
+                        selected === group
+                          ? 'bg-primary/10 font-medium text-primary'
+                          : 'hover:bg-muted text-foreground'
+                      )}
+                    >
+                      {group.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Right panel: sub-groups */}
