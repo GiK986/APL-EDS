@@ -100,6 +100,21 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
     setNatural(null);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    function onPaste(e: ClipboardEvent) {
+      const file = Array.from(e.clipboardData?.items ?? [])
+        .find((item) => item.type.startsWith('image/'))
+        ?.getAsFile();
+      if (file) {
+        e.preventDefault();
+        processFile(file);
+      }
+    }
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [open]);
+
   function resetImage() {
     setImageUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
