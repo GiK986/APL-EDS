@@ -159,7 +159,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
       { name: 'IncludeReplacements', value: includeReplacements ?? 'false' },
     ]);
     if (applicabilityRes.error || !applicabilityRes.data) return notFound();
-    categories = applicabilityRes.data.categories;
+    categories = applicabilityRes.data.categories ?? [];
     unitInfoMap = await buildUnitInfoMap(categories);
   } else if (isUnitFlow) {
     const unitPartsRes = await getUnitParts(token!);
@@ -233,7 +233,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
   } else {
     const partsRes = await getGroupParts(token!);
     if (partsRes.error || !partsRes.data) return notFound();
-    categories = partsRes.data.categories;
+    categories = partsRes.data.categories ?? [];
     unitInfoMap = await buildUnitInfoMap(categories);
 
     if (groupsToken && group) {
