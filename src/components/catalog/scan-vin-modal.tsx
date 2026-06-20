@@ -32,10 +32,18 @@ function isPlausibleVin(candidate: string): boolean {
 }
 
 function extractVinCandidate(rawText: string): string {
+  // Tokenize on whitespace first, rather than stripping spaces from the whole
+  // line — otherwise a label glued to the value on the same line (e.g. an
+  // "(E) <VIN>" field on a registration document) collapses into one blob,
+  // and the regex below can grab a 17-char window straddling both instead
+  // of the real VIN.
   for (const line of rawText.split('\n')) {
-    const compact = line.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    const match = compact.match(/[A-HJ-NPR-Z0-9]{17}/);
-    if (match && isPlausibleVin(match[0])) return match[0];
+    for (const token of line.split(/\s+/)) {
+      const compact = token.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      if (compact.length === 17 && /^[A-HJ-NPR-Z0-9]{17}$/.test(compact) && isPlausibleVin(compact)) {
+        return compact;
+      }
+    }
   }
   return '';
 }
