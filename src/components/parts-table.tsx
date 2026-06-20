@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Copy, Layers, Minus, Plus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Layers, Loader2, Minus, Plus, RotateCcw } from 'lucide-react';
 import { cleanText, cn } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns, type AttrColumn } from '@/lib/attr-columns';
 import { getGroupPartsAll } from '@/actions/yq';
@@ -202,6 +202,7 @@ function UnitPanel({
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const [paneSize, setPaneSize] = useState({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const paneRef = useRef<HTMLDivElement>(null);
@@ -235,6 +236,8 @@ function UnitPanel({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  const imageLoaded = loadedSrc === imageSrc;
 
   function zoomBy(delta: number) {
     setZoom((z) => {
@@ -296,6 +299,12 @@ function UnitPanel({
         ? prev
         : { w: el.naturalWidth, h: el.naturalHeight }
     );
+    // The ref callback runs on mount, before React attaches the onLoad
+    // listener — if the image (e.g. from SSR markup) already finished
+    // loading by then, the native "load" event has already fired and
+    // onLoad never gets called, leaving the spinner stuck. Catch that
+    // case here too.
+    setLoadedSrc(imageSrc ?? null);
   }
 
   function handlePointerMove(e: PointerEvent) {
@@ -417,7 +426,11 @@ function UnitPanel({
                   alt={cleanText(unitData.unit.name)}
                   className="absolute inset-0 h-full w-full object-fill"
                   draggable={false}
-                  onLoad={(e) => captureNatural(e.currentTarget)}
+                  onLoad={(e) => {
+                    captureNatural(e.currentTarget);
+                    setLoadedSrc(imageSrc ?? null);
+                  }}
+                  onError={() => setLoadedSrc(imageSrc ?? null)}
                 />
                 {natural &&
                   imageMap?.areas.map((area, areaIndex) => {
@@ -468,6 +481,11 @@ function UnitPanel({
             ) : (
               <div className="flex h-full items-center justify-center">
                 <p className="text-sm text-muted-foreground">{t('noDiagram', lang)}</p>
+              </div>
+            )}
+            {imageSrc && !imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
+                <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
               </div>
             )}
           </div>
