@@ -78,6 +78,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
     }
   });
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -132,6 +133,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
           goToVehicle(vehicles[0], value);
         } else {
           setDirectVehicles(vehicles);
+          inputRef.current?.focus();
         }
       } catch {
         setDirectError(t('directSearchFailed', lang));
@@ -155,6 +157,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
   return (
     <div ref={containerRef} className={cn('relative w-72', className)}>
       <input
+        ref={inputRef}
         type="text"
         value={directValue}
         onChange={(e) => setDirectValue(e.target.value)}
@@ -165,7 +168,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
       />
 
       {directOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-80 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg">
           <button
             type="button"
             onClick={() => setScanOpen(true)}
