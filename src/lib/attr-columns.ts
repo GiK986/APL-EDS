@@ -23,16 +23,18 @@ export function computeAttrColumns(
   return Array.from(columns, ([code, label]) => ({ code, label }));
 }
 
-// "Note" values encode multiple sub-fields joined with ';' (e.g.
-// "door;left" or "rear view mirror housing;left;PR:6XN+7Y8+"), so each
+// "Note" and "Options" values encode multiple sub-fields joined with ';'
+// (e.g. "door;left" or "rear view mirror housing;left;PR:6XN+7Y8+"), so each
 // segment renders on its own line. Other attributes (e.g. BMW's
 // associated_parts) use ';' as ordinary punctuation inside prose, so only
-// Note is split this way.
+// these two codes are split this way.
+const MULTI_VALUE_CODES = ['note', 'options'];
+
 export function attrCellLines(attributes: AttrNodeV2[] | undefined, code: string): string[] {
   const matches = attributes?.filter((a) => a.code === code) ?? [];
   return matches.flatMap((attr) =>
     attr.values.flatMap((v) =>
-      code === 'note'
+      MULTI_VALUE_CODES.includes(code)
         ? v
             .split(';')
             .map((s) => s.trim())
