@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Minus, Plus, RotateCcw, RotateCw, Upload } from 'lucide-react';
+import { Loader2, Minus, Plus, RotateCcw, RotateCw, Upload } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -316,7 +316,7 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
                 </button>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="relative flex flex-col gap-2">
               <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t('extractedVin', lang)}
               </label>
@@ -335,10 +335,10 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
                 </p>
               )}
               {status === 'error' && (
-                <p className="text-xs text-destructive">{t('scanFailed', lang)}</p>
+                <p className="text-sm text-destructive">{t('scanFailed', lang)}</p>
               )}
               {status === 'done' && !vin && (
-                <p className="text-xs text-destructive">{t('scanNoVinFound', lang)}</p>
+                <p className="text-sm text-destructive">{t('scanNoVinFound', lang)}</p>
               )}
               <Button
                 type="button"
@@ -349,6 +349,11 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
               >
                 {t('chooseAnotherPhoto', lang)}
               </Button>
+              {status === 'scanning' && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+                </div>
+              )}
             </div>
           </div>
         )}
