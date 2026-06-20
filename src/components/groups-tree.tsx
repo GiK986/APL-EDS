@@ -548,7 +548,7 @@ interface UnitsTableProps {
   lang: Lang;
 }
 
-function UnitsTable({
+export function UnitsTable({
   units,
   unitsToken,
   basePath,

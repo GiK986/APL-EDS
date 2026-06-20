@@ -1,18 +1,43 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Copy, Layers, Minus, Plus, RotateCcw } from 'lucide-react';
 import { cleanText, cn } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns, type AttrColumn } from '@/lib/attr-columns';
 import { getGroupPartsAll } from '@/actions/yq';
 import type {
   CategoryV2Dto,
+  ImageMapAreaV2Dto,
   PartSectionV2Dto,
   PartV2Dto,
   PartsByUnitV2Dto,
   UnitInfoV2Dto,
 } from '@/types/yq';
 import { t, type Lang } from '@/lib/i18n';
+
+/** Context needed to build a navigation URL when a diagram's "REF." callout
+ * (an imageMap area carrying a getUnits link) is clicked. */
+interface RefNavContext {
+  brand: string;
+  groupsToken?: string;
+  otherToken?: string;
+  vin?: string;
+  model?: string;
+  vehicleInfoToken?: string;
+  group?: string;
+}
+
+function buildRefHref(ctx: RefNavContext, refToken: string, refLabel: string): string {
+  const params = new URLSearchParams({ refToken, refLabel });
+  if (ctx.groupsToken) params.set('groupsToken', ctx.groupsToken);
+  if (ctx.otherToken) params.set('otherToken', ctx.otherToken);
+  if (ctx.vin) params.set('vin', ctx.vin);
+  if (ctx.model) params.set('model', ctx.model);
+  if (ctx.vehicleInfoToken) params.set('vehicleInfoToken', ctx.vehicleInfoToken);
+  if (ctx.group) params.set('group', ctx.group);
+  return `/catalog/${ctx.brand}/groups/parts?${params}`;
+}
 
 // Hotspot coordinates from getUnitInfo are expressed in the native pixel
 // space of the %size%=source image itself, not a fixed virtual canvas —
@@ -30,9 +55,17 @@ interface PartsTableProps {
   allPartsToken?: string;
   lang: Lang;
   tall?: boolean;
+  refNavContext?: RefNavContext;
 }
 
-export function PartsTable({ categories, unitInfoMap, allPartsToken, lang, tall }: PartsTableProps) {
+export function PartsTable({
+  categories,
+  unitInfoMap,
+  allPartsToken,
+  lang,
+  tall,
+  refNavContext,
+}: PartsTableProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [expandedUnitData, setExpandedUnitData] = useState<PartsByUnitV2Dto | null>(null);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
@@ -89,7 +122,13 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang, tall 
             {t('back', lang)}
           </button>
         </div>
-        <UnitPanel unitData={expandedUnitData} unitInfo={unitInfoMap[expandedKey]} lang={lang} fullHeight />
+        <UnitPanel
+          unitData={expandedUnitData}
+          unitInfo={unitInfoMap[expandedKey]}
+          lang={lang}
+          fullHeight
+          refNavContext={refNavContext}
+        />
       </div>
     );
   }
@@ -122,6 +161,7 @@ export function PartsTable({ categories, unitInfoMap, allPartsToken, lang, tall 
                 isLoadingAll={loadingKey === key}
                 onShowAll={() => handleShowAll(key, unitData.unit.code)}
                 tall={tall}
+                refNavContext={refNavContext}
               />
             );
           })}
@@ -140,6 +180,7 @@ interface UnitPanelProps {
   canShowAll?: boolean;
   isLoadingAll?: boolean;
   onShowAll?: () => void;
+  refNavContext?: RefNavContext;
 }
 
 function UnitPanel({
@@ -151,7 +192,9 @@ function UnitPanel({
   canShowAll,
   isLoadingAll,
   onShowAll,
+  refNavContext,
 }: UnitPanelProps) {
+  const router = useRouter();
   const [hoveredCode, setHoveredCode] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
@@ -293,6 +336,15 @@ function UnitPanel({
     });
   }
 
+  function handleAreaClick(area: ImageMapAreaV2Dto) {
+    const refLink = area.links?.find((l) => l.action === 'getUnits');
+    if (refLink && refNavContext) {
+      router.push(buildRefHref(refNavContext, refLink.token, refLink.label));
+      return;
+    }
+    selectAreaFromDiagram(area.areaCode);
+  }
+
   function registerRowRef(code: string | undefined, el: HTMLTableRowElement | null) {
     if (!code) return;
     if (el) rowRefs.current.set(code, el);
@@ -371,20 +423,35 @@ function UnitPanel({
                   imageMap?.areas.map((area, areaIndex) => {
                     const isSelected = area.areaCode === selectedCode;
                     const isHovered = area.areaCode === hoveredCode;
+                    const refLink = area.links?.find((l) => l.action === 'getUnits');
                     return (
                       <button
                         key={`${area.areaCode}-${areaIndex}`}
                         type="button"
                         onMouseEnter={() => setHoveredCode(area.areaCode)}
                         onMouseLeave={() => setHoveredCode(null)}
-                        onClick={() => selectAreaFromDiagram(area.areaCode)}
+                        onClick={() => handleAreaClick(area)}
                         className={cn(
-                          'absolute border-2 transition-colors',
-                          isSelected
-                            ? 'border-[rgba(247,196,0,0.7)] bg-[rgba(247,196,0,0.35)]'
-                            : isHovered
-                              ? 'border-[#C9A930] bg-[rgba(247,196,0,0.8)]'
-                              : 'border-transparent'
+                          'absolute transition-colors',
+                          refLink
+                            // "REF." callouts link to another diagram — stay
+                            // faintly visible at rest (unlike part hotspots,
+                            // which are invisible until hovered) so users
+                            // notice they're clickable cross-references.
+                            ? cn(
+                                'border-2 border-dashed',
+                                isHovered
+                                  ? 'border-sky-500 bg-sky-500/30'
+                                  : 'border-sky-500/60 bg-sky-500/10'
+                              )
+                            : cn(
+                                'border-2',
+                                isSelected
+                                  ? 'border-[rgba(247,196,0,0.7)] bg-[rgba(247,196,0,0.35)]'
+                                  : isHovered
+                                    ? 'border-[#C9A930] bg-[rgba(247,196,0,0.8)]'
+                                    : 'border-transparent'
+                              )
                         )}
                         style={{
                           left: `${(area.x1 / natural.w) * 100}%`,
@@ -392,7 +459,8 @@ function UnitPanel({
                           width: `${((area.x2 - area.x1) / natural.w) * 100}%`,
                           height: `${((area.y2 - area.y1) / natural.h) * 100}%`,
                         }}
-                        aria-label={area.areaCode}
+                        aria-label={refLink ? `${t('goToDiagram', lang)} ${refLink.label}` : area.areaCode}
+                        title={refLink ? `${t('goToDiagram', lang)} ${refLink.label}` : undefined}
                       />
                     );
                   })}
@@ -488,8 +556,11 @@ function PartsSectionTable({
   registerRowRef,
   lang,
 }: PartsSectionTableProps) {
-  const columns = useMemo(() => computeAttrColumns(section.parts), [section.parts]);
-  const showQty = useMemo(() => partHasQty(section.parts), [section.parts]);
+  // The YQ API sometimes omits the `parts` array entirely for an empty
+  // section instead of returning [] — guard at this boundary.
+  const parts = useMemo(() => section.parts ?? [], [section.parts]);
+  const columns = useMemo(() => computeAttrColumns(parts), [parts]);
+  const showQty = useMemo(() => partHasQty(parts), [parts]);
 
   return (
     <div>
@@ -526,7 +597,7 @@ function PartsSectionTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {section.parts.map((part, pi) => (
+          {parts.map((part, pi) => (
             <PartRow
               key={part.partNumber + pi}
               part={part}

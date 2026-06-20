@@ -9,6 +9,6 @@ export function cn(...inputs: ClassValue[]) {
 // multiple source segments with runs of literal whitespace left in place
 // (e.g. "engine oil                        Observe   maintenance manual:").
 // Collapse those runs to single spaces for display.
-export function cleanText(value: string): string {
-  return value.replace(/\s+/g, ' ').trim()
+export function cleanText(value: string | undefined): string {
+  return (value ?? '').replace(/\s+/g, ' ').trim()
 }

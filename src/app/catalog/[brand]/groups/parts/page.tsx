@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import {
   getGroupParts,
   getPartApplicability,
@@ -10,6 +10,7 @@ import {
   getLang,
 } from '@/actions/yq';
 import { PartsTable } from '@/components/parts-table';
+import { UnitsTable } from '@/components/groups-tree';
 import { Breadcrumb } from '@/components/catalog/breadcrumb';
 import { cleanText } from '@/lib/utils';
 import { t } from '@/lib/i18n';
@@ -116,6 +117,8 @@ interface PageProps {
     partToken?: string;
     partNumber?: string;
     includeReplacements?: string;
+    refToken?: string;
+    refLabel?: string;
   }>;
 }
 
@@ -138,12 +141,77 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
       partToken,
       partNumber,
       includeReplacements,
+      refToken,
+      refLabel,
     },
   ] = await Promise.all([params, searchParams]);
   const lang = (await getLang()) as Lang;
   const view: TreeView = viewParam === 'categories' ? 'categories' : 'groups';
   const isApplicabilityFlow = mode === 'applicability';
   const isUnitFlow = !isApplicabilityFlow && view === 'categories' && !!unitsToken;
+  const isRefFlow = !isApplicabilityFlow && !!refToken;
+
+  if (isRefFlow) {
+    const unitsRes = await getUnits(refToken!);
+    const units = unitsRes.data?.units ?? [];
+
+    // A "REF." diagram callout almost always points at a single unit — jump
+    // straight to its diagram instead of making the user pick from a list
+    // of one.
+    if (units.length === 1) {
+      const href = buildUnitPartsHref(
+        brand,
+        units[0],
+        refToken!,
+        groupsToken,
+        otherToken,
+        vin,
+        model,
+        vehicleInfoToken,
+        group
+      );
+      if (href) redirect(href);
+    }
+
+    const groupsHrefForRef = `/catalog/${brand}/groups${groupsToken ? `?token=${groupsToken}` : ''}`;
+    return (
+      <div className="px-4 py-4 sm:px-6">
+        <Breadcrumb
+          segments={[
+            { label: t('start', lang), href: '/' },
+            {
+              label: decodeURIComponent(brand)
+                .split('-')
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' '),
+              href: `/catalog/${brand}`,
+            },
+            { label: refLabel || t('groups', lang), href: groupsHrefForRef },
+          ]}
+        />
+        <div className="mt-4">
+          {units.length === 0 ? (
+            <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border">
+              <p className="text-sm text-muted-foreground">{t('noResults', lang)}</p>
+            </div>
+          ) : (
+            <UnitsTable
+              units={units}
+              unitsToken={refToken!}
+              basePath={`/catalog/${brand}`}
+              groupsToken={groupsToken}
+              otherToken={otherToken}
+              vin={vin}
+              model={model}
+              vehicleInfoToken={vehicleInfoToken}
+              mainGroupName={group}
+              lang={lang}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!isApplicabilityFlow && !token) return notFound();
   if (isApplicabilityFlow && (!partToken || !partNumber)) return notFound();
@@ -333,6 +401,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
           allPartsToken={allPartsToken}
           lang={lang}
           tall={isUnitFlow}
+          refNavContext={{ brand, groupsToken, otherToken, vin, model, vehicleInfoToken, group }}
         />
       </div>
     </div>

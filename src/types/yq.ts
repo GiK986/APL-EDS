@@ -169,7 +169,7 @@ export interface PartQtyV2 {
 
 export interface PartV2Dto {
   partNumber: string;
-  partName: string;
+  partName?: string;
   qty?: PartQtyV2;
   partNumberFormatted?: string;
   displayName?: string;
@@ -193,7 +193,7 @@ export interface UnitShortV2Dto {
 
 export interface PartSectionV2Dto {
   title?: string;
-  parts: PartV2Dto[];
+  parts?: PartV2Dto[];
 }
 
 export interface UnitShortListV2Dto {
@@ -247,6 +247,9 @@ export interface ImageMapAreaV2Dto {
   x2: number;
   y2: number;
   areaCode: string;
+  /** Present on "REF." callouts — jumps to another unit's diagram instead of
+   * highlighting a row in this one's parts table. */
+  links?: LinkV2Dto[];
 }
 
 export interface ImageMapV2Dto {
