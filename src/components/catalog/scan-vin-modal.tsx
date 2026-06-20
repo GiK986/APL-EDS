@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { scanVinWithVision } from '@/actions/vision';
 import { t, type Lang } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +38,15 @@ function extractVinCandidate(rawText: string): string {
     if (match && isPlausibleVin(match[0])) return match[0];
   }
   return '';
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinModalProps) {
@@ -193,14 +203,35 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
     });
     setStatus('scanning');
     setVin('');
+
+    let candidate = '';
+    let tesseractFailed = false;
     try {
       const { recognize } = await import('tesseract.js');
       const result = await recognize(file, 'eng');
-      setVin(extractVinCandidate(result.data.text));
-      setStatus('done');
+      candidate = extractVinCandidate(result.data.text);
     } catch {
-      setStatus('error');
+      tesseractFailed = true;
     }
+
+    // Tesseract struggles with the low-contrast, embossed plates that are
+    // common on VIN stickers — fall back to Google Vision when it comes up
+    // empty, rather than only on a hard failure.
+    if (!candidate) {
+      try {
+        const base64 = await fileToBase64(file);
+        candidate = extractVinCandidate(await scanVinWithVision(base64));
+        tesseractFailed = false;
+      } catch {
+        if (tesseractFailed) {
+          setStatus('error');
+          return;
+        }
+      }
+    }
+
+    setVin(candidate);
+    setStatus('done');
   }
 
   function handleFiles(files: FileList | null) {
