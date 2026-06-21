@@ -92,16 +92,32 @@ export function GroupsTree({
   );
 
   const normalizedQuery = query.trim().toLowerCase();
+
+  // In "categories" the search is scoped to the selected group's own
+  // content (see below) — the left-hand group list always stays whole so
+  // switching the search term never makes a group disappear from under you.
   const topGroups = useMemo(() => {
     const allTopGroups = tree.children ?? [];
-    if (!normalizedQuery) return allTopGroups;
+    if (view === 'categories' || !normalizedQuery) return allTopGroups;
     return allTopGroups
       .map((group) => filterTreeNode(group, normalizedQuery))
       .filter((group): group is GroupNodeV2Dto => group !== null);
-  }, [tree.children, normalizedQuery]);
+  }, [tree.children, normalizedQuery, view]);
 
   const selected = topGroups.find((g) => g.name === selectedKey) ?? topGroups[0] ?? null;
-  const subGroups = selected?.children ?? [];
+  const subGroups = useMemo(() => selected?.children ?? [], [selected]);
+
+  // Categories-only: filter the selected group's own subtree by name,
+  // leaving `subGroups` (used for the structural "has children?" checks
+  // below) untouched.
+  const visibleSubGroups = useMemo(() => {
+    if (view !== 'categories' || !normalizedQuery) return subGroups;
+    return subGroups
+      .map((group) => filterTreeNode(group, normalizedQuery))
+      .filter((group): group is GroupNodeV2Dto => group !== null);
+  }, [subGroups, normalizedQuery, view]);
+  const categoriesSearchQuery = view === 'categories' ? normalizedQuery : undefined;
+
   const activeToken = view === 'categories' ? categoriesToken : groupsToken;
   const otherToken = view === 'categories' ? groupsToken : categoriesToken;
 
@@ -268,29 +284,35 @@ export function GroupsTree({
                         mainGroupName={selected.name}
                         lang={lang}
                         matchCodes={matchCodes}
+                        searchQuery={categoriesSearchQuery}
                       />
                     </div>
                   )}
-                <ul className="divide-y divide-border">
-                  {subGroups.map((sub, i) => (
-                    <li key={sub.token ?? sub.name ?? i} className="px-4 py-2">
-                      <SubGroupItem
-                        group={sub}
-                        brand={brand}
-                        basePath={basePath}
-                        groupsToken={activeToken}
-                        otherToken={otherToken}
-                        view={view}
-                        vin={vin}
-                        model={model}
-                        vehicleInfoToken={vehicleInfoToken}
-                        mainGroupName={selected.name}
-                        lang={lang}
-                        matchCodes={matchCodes}
-                      />
-                    </li>
-                  ))}
-                </ul>
+                {subGroups.length > 0 && visibleSubGroups.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-muted-foreground">{t('noResults', lang)}</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {visibleSubGroups.map((sub, i) => (
+                      <li key={sub.token ?? sub.name ?? i} className="px-4 py-2">
+                        <SubGroupItem
+                          group={sub}
+                          brand={brand}
+                          basePath={basePath}
+                          groupsToken={activeToken}
+                          otherToken={otherToken}
+                          view={view}
+                          vin={vin}
+                          model={model}
+                          vehicleInfoToken={vehicleInfoToken}
+                          mainGroupName={selected.name}
+                          lang={lang}
+                          matchCodes={matchCodes}
+                          searchQuery={categoriesSearchQuery}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </div>
@@ -337,6 +359,7 @@ interface SubGroupItemProps {
   mainGroupName?: string;
   lang: Lang;
   matchCodes?: string[];
+  searchQuery?: string;
 }
 
 function SubGroupItem({
@@ -352,6 +375,7 @@ function SubGroupItem({
   mainGroupName,
   lang,
   matchCodes,
+  searchQuery,
 }: SubGroupItemProps) {
   const partsLink = group.links?.find((l) => l.action === 'getGroupParts');
   const unitsLink =
@@ -380,6 +404,7 @@ function SubGroupItem({
         mainGroupName={mainGroupName}
         lang={lang}
         matchCodes={matchCodes}
+        searchQuery={searchQuery}
       />
     );
   }
@@ -456,6 +481,7 @@ function SubGroupItem({
                 mainGroupName={mainGroupName}
                 lang={lang}
                 matchCodes={matchCodes}
+                searchQuery={searchQuery}
               />
             </li>
           ))}
@@ -476,6 +502,7 @@ interface CategoryUnitsListProps {
   mainGroupName?: string;
   lang: Lang;
   matchCodes?: string[];
+  searchQuery?: string;
 }
 
 const unitsRequestCache = new Map<string, Promise<UnitShortV2Dto[]>>();
@@ -501,6 +528,7 @@ function CategoryUnitsList({
   mainGroupName,
   lang,
   matchCodes,
+  searchQuery,
 }: CategoryUnitsListProps) {
   const [state, setState] = useState<{
     token: string;
@@ -546,6 +574,7 @@ function CategoryUnitsList({
       mainGroupName={mainGroupName}
       lang={lang}
       matchCodes={matchCodes}
+      searchQuery={searchQuery}
     />
   );
 }
@@ -562,6 +591,7 @@ interface UnitsTableProps {
   mainGroupName?: string;
   lang: Lang;
   matchCodes?: string[];
+  searchQuery?: string;
 }
 
 export function UnitsTable({
@@ -576,9 +606,26 @@ export function UnitsTable({
   mainGroupName,
   lang,
   matchCodes,
+  searchQuery,
 }: UnitsTableProps) {
   const router = useRouter();
+  // Columns are derived from the full unit set so the table header doesn't
+  // shift as the search narrows which rows are visible.
   const columns = useMemo(() => computeAttrColumns(units), [units]);
+
+  // Matches against description + the attribute columns (e.g. "Note") —
+  // the same text the user actually sees in the table, not the unit code.
+  const visibleUnits = useMemo(() => {
+    if (!searchQuery) return units;
+    return units.filter((unit) => {
+      if (cleanText(unit.name).toLowerCase().includes(searchQuery)) return true;
+      return columns.some((col) =>
+        attrCellLines(unit.attributes, col.code).some((line) =>
+          cleanText(line).toLowerCase().includes(searchQuery)
+        )
+      );
+    });
+  }, [units, columns, searchQuery]);
 
   function buildHref(unit: UnitShortV2Dto, partsToken: string): string {
     const params = new URLSearchParams({
@@ -619,7 +666,17 @@ export function UnitsTable({
         </tr>
       </thead>
       <tbody className="divide-y divide-border">
-        {units.map((unit, ui) => {
+        {visibleUnits.length === 0 && (
+          <tr>
+            <td
+              colSpan={columns.length + 3}
+              className="px-2 py-3 text-sm text-muted-foreground"
+            >
+              {t('noResults', lang)}
+            </td>
+          </tr>
+        )}
+        {visibleUnits.map((unit, ui) => {
           const partsLink = unit.links?.find((l) => l.action === 'getUnitParts');
           const href = partsLink ? buildHref(unit, partsLink.token) : undefined;
 
