@@ -12,3 +12,11 @@ export function cn(...inputs: ClassValue[]) {
 export function cleanText(value: string | undefined): string {
   return (value ?? '').replace(/\s+/g, ' ').trim()
 }
+
+// Some catalogs (e.g. VAG) pack the unit "note" attribute as ';'-separated
+// sub-fields, with a stray run of ';' marking an intentionally blank field
+// (e.g. "oil pump;1.5ltr.;Otto engine+, oil filter;;DUCA,DUCB"). Collapse
+// those runs to a single separator and render it as " | " instead.
+export function formatNoteValue(value: string): string {
+  return value.replace(/;{2,}/g, ';').replace(/;/g, ' | ')
+}

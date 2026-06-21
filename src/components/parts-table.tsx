@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Copy, Layers, Loader2, Minus, Plus, RotateCcw } from 'lucide-react';
-import { cleanText, cn } from '@/lib/utils';
+import { cleanText, cn, formatNoteValue } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns, type AttrColumn } from '@/lib/attr-columns';
 import { getGroupPartsAll } from '@/actions/yq';
 import type {
@@ -105,8 +105,8 @@ export function PartsTable({
               </p>
             )}
             {noteAttr && (
-              <p className="mt-0.5 text-xs italic text-muted-foreground">
-                {noteAttr.label}: {cleanText(noteAttr.values.join(', '))}
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {noteAttr.label}: {formatNoteValue(cleanText(noteAttr.values.join(', ')))}
               </p>
             )}
           </div>
@@ -372,8 +372,8 @@ function UnitPanel({
               </p>
             )}
             {noteAttr && (
-              <p className="mt-0.5 text-xs italic text-muted-foreground">
-                {noteAttr.label}: {cleanText(noteAttr.values.join(', '))}
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {noteAttr.label}: {formatNoteValue(cleanText(noteAttr.values.join(', ')))}
               </p>
             )}
           </div>
