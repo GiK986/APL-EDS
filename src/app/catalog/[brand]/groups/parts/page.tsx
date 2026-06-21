@@ -7,12 +7,14 @@ import {
   getNavigationTree,
   getUnits,
   getUnitParts,
+  getVehicleInfo,
   getLang,
 } from '@/actions/yq';
 import { PartsTable } from '@/components/parts-table';
 import { UnitsTable } from '@/components/groups-tree';
 import { Breadcrumb } from '@/components/catalog/breadcrumb';
 import { cleanText } from '@/lib/utils';
+import { getHighlightCodes } from '@/lib/vehicle-codes';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
 import type { CategoryV2Dto, GroupNodeV2Dto, UnitInfoV2Dto, UnitShortV2Dto } from '@/types/yq';
@@ -151,6 +153,13 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
   const isUnitFlow = !isApplicabilityFlow && view === 'categories' && !!unitsToken;
   const isRefFlow = !isApplicabilityFlow && !!refToken;
 
+  // Only "basic" (partial) vehicle matches need this — a "full" match means
+  // the API already filtered everything down to this exact vehicle, so
+  // there's nothing left to disambiguate.
+  const matchCodes = vehicleInfoToken
+    ? getHighlightCodes((await getVehicleInfo(vehicleInfoToken)).data)
+    : [];
+
   if (isRefFlow) {
     const unitsRes = await getUnits(refToken!);
     const units = unitsRes.data?.units ?? [];
@@ -206,6 +215,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
               vehicleInfoToken={vehicleInfoToken}
               mainGroupName={group}
               lang={lang}
+              matchCodes={matchCodes}
             />
           )}
         </div>
@@ -402,6 +412,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
           lang={lang}
           tall={isUnitFlow}
           refNavContext={{ brand, groupsToken, otherToken, vin, model, vehicleInfoToken, group }}
+          matchCodes={matchCodes}
         />
       </div>
     </div>

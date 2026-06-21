@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
-import { getGroups, getNavigationTree, getLang } from '@/actions/yq';
+import { getGroups, getNavigationTree, getVehicleInfo, getLang } from '@/actions/yq';
 import { GroupsTree } from '@/components/groups-tree';
 import type { BreadcrumbSegment } from '@/components/catalog/breadcrumb';
+import { getHighlightCodes } from '@/lib/vehicle-codes';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
 
@@ -31,6 +32,10 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
   const treeRes =
     view === 'categories' ? await getNavigationTree(navToken!) : await getGroups(token!);
   if (treeRes.error || !treeRes.data) return notFound();
+
+  const matchCodes = vehicleInfoToken
+    ? getHighlightCodes((await getVehicleInfo(vehicleInfoToken)).data)
+    : [];
 
   const brandLabel = decodeURIComponent(brand)
     .split('-')
@@ -73,6 +78,7 @@ export default async function GroupsPage({ params, searchParams }: PageProps) {
         initialGroup={group}
         breadcrumbSegments={breadcrumbSegments}
         lang={lang}
+        matchCodes={matchCodes}
       />
     </div>
   );

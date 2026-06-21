@@ -8,6 +8,7 @@ import { buildVehicleGroupsHref } from '@/lib/vehicle-nav';
 import { ScanVinModal } from '@/components/catalog/scan-vin-modal';
 import { t, type Lang } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { ENGINE_ATTR_CODES } from '@/lib/vehicle-codes';
 import type { VehicleV2Dto } from '@/types/yq';
 
 const RECENT_KEY = 'apl-eds:recent-vehicles';
@@ -16,7 +17,6 @@ const RECENT_KEY = 'apl-eds:recent-vehicles';
 // Only the rendered dropdown is capped (and scrollable).
 const RECENT_DISPLAY_LIMIT = 15;
 
-const ENGINE_ATTR_CODES = ['engine', 'enginecode', 'motor', 'motorcode'];
 const BODY_ATTR_CODES = ['bodystyle', 'bodytype', 'body', 'karosserie'];
 
 interface RecentVehicle {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Copy, Layers, Loader2, Minus, Plus, RotateCcw } from 'lucide-react';
 import { cleanText, cn, formatNoteValue } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns, type AttrColumn } from '@/lib/attr-columns';
+import { highlightCodes } from '@/components/highlight-codes';
 import { getGroupPartsAll } from '@/actions/yq';
 import type {
   CategoryV2Dto,
@@ -56,6 +57,7 @@ interface PartsTableProps {
   lang: Lang;
   tall?: boolean;
   refNavContext?: RefNavContext;
+  matchCodes?: string[];
 }
 
 export function PartsTable({
@@ -65,6 +67,7 @@ export function PartsTable({
   lang,
   tall,
   refNavContext,
+  matchCodes,
 }: PartsTableProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [expandedUnitData, setExpandedUnitData] = useState<PartsByUnitV2Dto | null>(null);
@@ -106,7 +109,8 @@ export function PartsTable({
             )}
             {noteAttr && (
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {noteAttr.label}: {formatNoteValue(cleanText(noteAttr.values.join(', ')))}
+                {noteAttr.label}:{' '}
+                {highlightCodes(formatNoteValue(cleanText(noteAttr.values.join(', '))), matchCodes)}
               </p>
             )}
           </div>
@@ -128,6 +132,7 @@ export function PartsTable({
           lang={lang}
           fullHeight
           refNavContext={refNavContext}
+          matchCodes={matchCodes}
         />
       </div>
     );
@@ -162,6 +167,7 @@ export function PartsTable({
                 onShowAll={() => handleShowAll(key, unitData.unit.code)}
                 tall={tall}
                 refNavContext={refNavContext}
+                matchCodes={matchCodes}
               />
             );
           })}
@@ -181,6 +187,7 @@ interface UnitPanelProps {
   isLoadingAll?: boolean;
   onShowAll?: () => void;
   refNavContext?: RefNavContext;
+  matchCodes?: string[];
 }
 
 function UnitPanel({
@@ -193,6 +200,7 @@ function UnitPanel({
   isLoadingAll,
   onShowAll,
   refNavContext,
+  matchCodes,
 }: UnitPanelProps) {
   const router = useRouter();
   const [hoveredCode, setHoveredCode] = useState<string | null>(null);
@@ -373,7 +381,8 @@ function UnitPanel({
             )}
             {noteAttr && (
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {noteAttr.label}: {formatNoteValue(cleanText(noteAttr.values.join(', ')))}
+                {noteAttr.label}:{' '}
+                {highlightCodes(formatNoteValue(cleanText(noteAttr.values.join(', '))), matchCodes)}
               </p>
             )}
           </div>
@@ -543,6 +552,7 @@ function UnitPanel({
               onClick={toggleAreaCode}
               registerRowRef={registerRowRef}
               lang={lang}
+              matchCodes={matchCodes}
             />
           ))}
         </div>
@@ -563,6 +573,7 @@ interface PartsSectionTableProps {
   onClick: (code?: string) => void;
   registerRowRef: (code: string | undefined, el: HTMLTableRowElement | null) => void;
   lang: Lang;
+  matchCodes?: string[];
 }
 
 function PartsSectionTable({
@@ -573,6 +584,7 @@ function PartsSectionTable({
   onClick,
   registerRowRef,
   lang,
+  matchCodes,
 }: PartsSectionTableProps) {
   // The YQ API sometimes omits the `parts` array entirely for an empty
   // section instead of returning [] — guard at this boundary.
@@ -626,6 +638,7 @@ function PartsSectionTable({
               columns={columns}
               showQty={showQty}
               lang={lang}
+              matchCodes={matchCodes}
             />
           ))}
         </tbody>
@@ -643,6 +656,7 @@ interface PartRowProps {
   columns: AttrColumn[];
   showQty: boolean;
   lang: Lang;
+  matchCodes?: string[];
 }
 
 function PartRow({
@@ -654,6 +668,7 @@ function PartRow({
   columns,
   showQty,
   lang,
+  matchCodes,
 }: PartRowProps) {
   const [copied, setCopied] = useState(false);
 
@@ -709,7 +724,9 @@ function PartRow({
             key={col.code}
             className="px-3 py-2 text-xs text-muted-foreground hidden lg:table-cell"
           >
-            {lines.length ? lines.map((line, i) => <div key={i}>{line}</div>) : '—'}
+            {lines.length
+              ? lines.map((line, i) => <div key={i}>{highlightCodes(line, matchCodes)}</div>)
+              : '—'}
           </td>
         );
       })}

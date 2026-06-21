@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronRight, Search, X } from 'lucide-react';
 import { cleanText, cn } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns } from '@/lib/attr-columns';
+import { highlightCodes } from '@/components/highlight-codes';
 import { t, type Lang } from '@/lib/i18n';
 import { getUnits } from '@/actions/yq';
 import { Breadcrumb, type BreadcrumbSegment } from '@/components/catalog/breadcrumb';
@@ -40,6 +41,7 @@ interface GroupsTreeProps {
   initialGroup?: string;
   breadcrumbSegments: BreadcrumbSegment[];
   lang: Lang;
+  matchCodes?: string[];
 }
 
 function buildViewHref(
@@ -81,6 +83,7 @@ export function GroupsTree({
   initialGroup,
   breadcrumbSegments,
   lang,
+  matchCodes,
 }: GroupsTreeProps) {
   const [query, setQuery] = useState('');
   const searchInputId = useId();
@@ -264,6 +267,7 @@ export function GroupsTree({
                         vehicleInfoToken={vehicleInfoToken}
                         mainGroupName={selected.name}
                         lang={lang}
+                        matchCodes={matchCodes}
                       />
                     </div>
                   )}
@@ -282,6 +286,7 @@ export function GroupsTree({
                         vehicleInfoToken={vehicleInfoToken}
                         mainGroupName={selected.name}
                         lang={lang}
+                        matchCodes={matchCodes}
                       />
                     </li>
                   ))}
@@ -331,6 +336,7 @@ interface SubGroupItemProps {
   vehicleInfoToken?: string;
   mainGroupName?: string;
   lang: Lang;
+  matchCodes?: string[];
 }
 
 function SubGroupItem({
@@ -345,6 +351,7 @@ function SubGroupItem({
   vehicleInfoToken,
   mainGroupName,
   lang,
+  matchCodes,
 }: SubGroupItemProps) {
   const partsLink = group.links?.find((l) => l.action === 'getGroupParts');
   const unitsLink =
@@ -372,6 +379,7 @@ function SubGroupItem({
         vehicleInfoToken={vehicleInfoToken}
         mainGroupName={mainGroupName}
         lang={lang}
+        matchCodes={matchCodes}
       />
     );
   }
@@ -447,6 +455,7 @@ function SubGroupItem({
                 vehicleInfoToken={vehicleInfoToken}
                 mainGroupName={mainGroupName}
                 lang={lang}
+                matchCodes={matchCodes}
               />
             </li>
           ))}
@@ -466,6 +475,7 @@ interface CategoryUnitsListProps {
   vehicleInfoToken?: string;
   mainGroupName?: string;
   lang: Lang;
+  matchCodes?: string[];
 }
 
 const unitsRequestCache = new Map<string, Promise<UnitShortV2Dto[]>>();
@@ -490,6 +500,7 @@ function CategoryUnitsList({
   vehicleInfoToken,
   mainGroupName,
   lang,
+  matchCodes,
 }: CategoryUnitsListProps) {
   const [state, setState] = useState<{
     token: string;
@@ -534,6 +545,7 @@ function CategoryUnitsList({
       vehicleInfoToken={vehicleInfoToken}
       mainGroupName={mainGroupName}
       lang={lang}
+      matchCodes={matchCodes}
     />
   );
 }
@@ -549,6 +561,7 @@ interface UnitsTableProps {
   vehicleInfoToken?: string;
   mainGroupName?: string;
   lang: Lang;
+  matchCodes?: string[];
 }
 
 export function UnitsTable({
@@ -562,6 +575,7 @@ export function UnitsTable({
   vehicleInfoToken,
   mainGroupName,
   lang,
+  matchCodes,
 }: UnitsTableProps) {
   const router = useRouter();
   const columns = useMemo(() => computeAttrColumns(units), [units]);
@@ -627,7 +641,9 @@ export function UnitsTable({
                     key={col.code}
                     className="px-2 py-1.5 text-xs text-muted-foreground hidden lg:table-cell"
                   >
-                    {lines.length ? lines.map((line, i) => <div key={i}>{line}</div>) : '—'}
+                    {lines.length
+                      ? lines.map((line, i) => <div key={i}>{highlightCodes(line, matchCodes)}</div>)
+                      : '—'}
                   </td>
                 );
               })}
