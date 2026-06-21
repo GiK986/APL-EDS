@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera } from 'lucide-react';
 import { searchVehicleByVin, searchVehicleByVinGlobal } from '@/actions/yq';
@@ -82,6 +82,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
   });
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -161,6 +162,8 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
     <div ref={containerRef} className={cn('relative w-72', className)}>
       <input
         ref={inputRef}
+        id={inputId}
+        name="vin"
         type="text"
         value={directValue}
         onChange={(e) => setDirectValue(e.target.value)}

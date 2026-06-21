@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Search, X } from 'lucide-react';
@@ -83,6 +83,7 @@ export function GroupsTree({
   lang,
 }: GroupsTreeProps) {
   const [query, setQuery] = useState('');
+  const searchInputId = useId();
   const [selectedKey, setSelectedKey] = useState<string | null>(
     () => initialGroup ?? tree.children?.[0]?.name ?? null
   );
@@ -177,9 +178,11 @@ export function GroupsTree({
             <div />
           )}
 
-          <div className="relative w-[300px]">
+          <div className="relative w-80">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
+              id={searchInputId}
+              name="groupsSearch"
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

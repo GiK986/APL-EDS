@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   findApplicableVehicles,
@@ -53,6 +53,7 @@ export function PartSearchPanel({
   >(null);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputId = useId();
 
   useEffect(() => {
     if (!isPopover) return;
@@ -174,6 +175,8 @@ export function PartSearchPanel({
 
   const inputField = (
     <input
+      id={inputId}
+      name="partNumber"
       type="text"
       value={partNumber}
       onChange={(e) => setPartNumber(e.target.value)}
