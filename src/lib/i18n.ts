@@ -98,7 +98,7 @@ const translations = {
     back: 'Назад',
     next: 'Напред',
     search: 'Търсене',
-    partPlaceholder: 'Въведете номер на part',
+    partPlaceholder: 'Въведете номера на артикула',
     includeReplacements: 'С аналози',
     yes: 'Да',
     no: 'Не',

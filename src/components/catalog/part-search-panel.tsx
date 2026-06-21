@@ -265,12 +265,12 @@ export function PartSearchPanel({
 
   if (isPopover) {
     return (
-      <div ref={containerRef} className={cn('relative w-72', className)}>
+      <div ref={containerRef} className={cn('relative w-70', className)}>
         {inputField}
         {open && (
           <div
             className={cn(
-              'absolute top-full z-50 mt-1 w-80 space-y-3 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg',
+              'absolute top-full z-50 mt-1 w-70 space-y-3 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg',
               align === 'right' ? 'right-0' : 'left-0'
             )}
           >

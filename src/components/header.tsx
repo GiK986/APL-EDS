@@ -21,7 +21,7 @@ export async function AppHeader() {
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-1.5 sm:flex">
             <Search className="h-4 w-4 text-muted-foreground" />
-            <PartSearchPanel lang={lang} variant="popover" align="right" className="w-44" />
+            <PartSearchPanel lang={lang} variant="popover" align="right" className="w-70" />
           </div>
           <LanguageSwitcher currentLang={lang} />
         </div>
