@@ -11,7 +11,10 @@ import { cn } from '@/lib/utils';
 import type { VehicleV2Dto } from '@/types/yq';
 
 const RECENT_KEY = 'apl-eds:recent-vehicles';
-const RECENT_LIMIT = 5;
+// Storage itself is unbounded — kept so the brand-filtered view below has a
+// full history to filter from, not just whatever survived the global cap.
+// Only the rendered dropdown is capped (and scrollable).
+const RECENT_DISPLAY_LIMIT = 15;
 
 const ENGINE_ATTR_CODES = ['engine', 'enginecode', 'motor', 'motorcode'];
 const BODY_ATTR_CODES = ['bodystyle', 'bodytype', 'body', 'karosserie'];
@@ -97,7 +100,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
       model: vehicle.model,
       searchedAt,
     };
-    const next = [entry, ...recent.filter((r) => r.vin !== vin)].slice(0, RECENT_LIMIT);
+    const next = [entry, ...recent.filter((r) => r.vin !== vin)];
     setRecent(next);
     try {
       localStorage.setItem(RECENT_KEY, JSON.stringify(next));
@@ -231,8 +234,8 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
               <p className="px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t('lastVehiclesSelected', lang)}
               </p>
-              <ul className="mt-1">
-                {filteredRecent.map((r) => (
+              <ul className="mt-1 max-h-64 overflow-y-auto">
+                {filteredRecent.slice(0, RECENT_DISPLAY_LIMIT).map((r) => (
                   <li key={r.vin}>
                     <button
                       type="button"
