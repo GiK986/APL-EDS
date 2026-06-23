@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Copy, Layers, Loader2, Minus, Plus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Layers, Loader2, Minus, Plus, RotateCcw, Search } from 'lucide-react';
 import { cleanText, cn, formatNoteValue } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns, type AttrColumn } from '@/lib/attr-columns';
 import { highlightCodes } from '@/components/highlight-codes';
+import { openOeAftermarket, useIsTm1Embedded } from '@/lib/tm1-bridge';
 import { getGroupPartsAll } from '@/actions/yq';
 import type {
   CategoryV2Dto,
@@ -671,12 +672,18 @@ function PartRow({
   matchCodes,
 }: PartRowProps) {
   const [copied, setCopied] = useState(false);
+  const isTm1Embedded = useIsTm1Embedded();
 
   async function handleCopy(e: React.MouseEvent) {
     e.stopPropagation();
     await navigator.clipboard.writeText(part.partNumber);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  function handleSearchOeAftermarket(e: React.MouseEvent) {
+    e.stopPropagation();
+    openOeAftermarket(part.partNumber);
   }
 
   return (
@@ -704,6 +711,17 @@ function PartRow({
               className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+            </button>
+          )}
+          {part.partNumber && isTm1Embedded && (
+            <button
+              type="button"
+              onClick={handleSearchOeAftermarket}
+              aria-label={t('searchOeAftermarket', lang)}
+              title={t('searchOeAftermarket', lang)}
+              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Search className="h-3 w-3" />
             </button>
           )}
         </span>
