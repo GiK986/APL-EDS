@@ -57,6 +57,45 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+// Phone camera photos routinely come in at several MB, which both slows down
+// OCR and can blow past the Server Action body limit once base64-encoded.
+// Downscaling to a VIN-plate-readable size keeps both paths fast and small,
+// falling back to the original file if anything about decoding/encoding fails.
+function downscaleForOcr(file: File, maxDim = 1800, quality = 0.85): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const longestSide = Math.max(img.naturalWidth, img.naturalHeight);
+      if (longestSide <= maxDim) {
+        resolve(file);
+        return;
+      }
+      const scale = maxDim / longestSide;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => resolve(blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file),
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
 export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinModalProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('idle');
@@ -212,11 +251,13 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
     setStatus('scanning');
     setVin('');
 
+    const ocrFile = await downscaleForOcr(file);
+
     let candidate = '';
     let tesseractFailed = false;
     try {
       const { recognize } = await import('tesseract.js');
-      const result = await recognize(file, 'eng');
+      const result = await recognize(ocrFile, 'eng');
       candidate = extractVinCandidate(result.data.text);
     } catch {
       tesseractFailed = true;
@@ -227,7 +268,7 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
     // empty, rather than only on a hard failure.
     if (!candidate) {
       try {
-        const base64 = await fileToBase64(file);
+        const base64 = await fileToBase64(ocrFile);
         candidate = extractVinCandidate(await scanVinWithVision(base64));
         tesseractFailed = false;
       } catch {
