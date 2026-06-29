@@ -69,16 +69,17 @@ function isHeic(file: File): boolean {
 // entirely, falling through downscaleForOcr's error fallback as the full,
 // undownscaled original, which is what was blowing past the Server Action
 // body limit. Convert to JPEG first so the rest of the pipeline sees a format
-// every browser can decode, same as any other photo. Some newer HEIC variants
-// (e.g. certain HDR encodings) aren't supported by heic2any's bundled libheif
-// build either — it rejects cleanly with "ERR_LIBHEIF format not supported"
-// in that case, which this falls back from like any other failure.
+// every browser can decode, same as any other photo.
+//
+// heic-to (not heic2any — that one's bundled libheif rejected real-world
+// HDR/Portrait-mode HEIC variants with "ERR_LIBHEIF format not supported";
+// heic-to's newer build decoded the same files fine) — falls back to the
+// original file on any failure, same as any other unreadable photo.
 async function convertHeicToJpeg(file: File): Promise<File> {
   if (!isHeic(file)) return file;
   try {
-    const { default: heic2any } = await import('heic2any');
-    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
-    const blob = Array.isArray(result) ? result[0] : result;
+    const { heicTo } = await import('heic-to');
+    const blob = await heicTo({ blob: file, type: 'image/jpeg', quality: 0.9 });
     return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
   } catch {
     return file;
