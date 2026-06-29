@@ -3,11 +3,6 @@ description: Report a bug or unexpected behavior
 title: "[Bug]: "
 labels: ["bug"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for taking the time to report a bug! Please fill out the form below so we can reproduce and fix it.
-
   - type: textarea
     id: description
     attributes:
@@ -22,10 +17,6 @@ body:
     attributes:
       label: Steps to Reproduce
       description: Step-by-step instructions to reproduce the behavior.
-      placeholder: |
-        1. Run `/clone-website https://example.com`
-        2. Wait for agents to finish
-        3. See error in terminal...
     validations:
       required: true
 
@@ -41,43 +32,21 @@ body:
     id: actual
     attributes:
       label: Actual Behavior
-      description: What actually happened? Include error messages or screenshots if possible.
+      description: What actually happened? Include error messages, logs, or screenshots if possible.
     validations:
       required: true
-
-  - type: input
-    id: target-url
-    attributes:
-      label: Target URL
-      description: The website URL you were trying to clone (if applicable).
-      placeholder: https://example.com
 
   - type: dropdown
-    id: os
+    id: context
     attributes:
-      label: Operating System
+      label: Context
+      description: Where did this happen?
       options:
-        - macOS
-        - Windows
-        - Linux
+        - Standalone (apl-eds.autoplus.bg)
+        - Embedded in Next Catalogue (TM1)
+        - Local development
     validations:
       required: true
-
-  - type: input
-    id: node-version
-    attributes:
-      label: Node.js Version
-      description: Run `node -v` to find this.
-      placeholder: v24.x.x
-    validations:
-      required: true
-
-  - type: input
-    id: claude-code-version
-    attributes:
-      label: Claude Code Version
-      description: Run `claude --version` to find this.
-      placeholder: 1.x.x
 
   - type: textarea
     id: additional

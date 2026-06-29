@@ -77,4 +77,4 @@ GHCR on every push to `master` or on tags.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Proprietary — UNLICENSED, all rights reserved.
