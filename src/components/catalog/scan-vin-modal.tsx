@@ -69,44 +69,28 @@ function isHeic(file: File): boolean {
 // entirely, falling through downscaleForOcr's error fallback as the full,
 // undownscaled original, which is what was blowing past the Server Action
 // body limit. Convert to JPEG first so the rest of the pipeline sees a format
-// every browser can decode, same as any other photo.
-//
-// heic2any's bundled libheif worker throws synchronously from its own
-// worker.onmessage handler on a decode failure ("Error attempting to read
-// image"), instead of rejecting the promise it returns — so a try/catch
-// around the call never fires, and the await just hangs forever. Race it
-// against a window 'error' listener to unstick that case with the same
-// original-file fallback as any other failure.
+// every browser can decode, same as any other photo. Some newer HEIC variants
+// (e.g. certain HDR encodings) aren't supported by heic2any's bundled libheif
+// build either — it rejects cleanly with "ERR_LIBHEIF format not supported"
+// in that case, which this falls back from like any other failure.
 async function convertHeicToJpeg(file: File): Promise<File> {
   if (!isHeic(file)) return file;
-  return new Promise<File>((resolve) => {
-    let settled = false;
-    function finish(result: File) {
-      if (settled) return;
-      settled = true;
-      window.removeEventListener('error', onWindowError);
-      resolve(result);
-    }
-    function onWindowError(event: ErrorEvent) {
-      event.preventDefault();
-      finish(file);
-    }
-    window.addEventListener('error', onWindowError);
-
-    import('heic2any')
-      .then(({ default: heic2any }) => heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
-      .then((result) => {
-        const blob = Array.isArray(result) ? result[0] : result;
-        finish(new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' }));
-      })
-      .catch(() => finish(file));
-  });
+  try {
+    const { default: heic2any } = await import('heic2any');
+    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+    const blob = Array.isArray(result) ? result[0] : result;
+    return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
 }
 
 // Phone camera photos routinely come in at several MB, which both slows down
 // OCR and can blow past the Server Action body limit once base64-encoded.
-// Downscaling to a VIN-plate-readable size keeps both paths fast and small,
-// falling back to the original file if anything about decoding/encoding fails.
+// Always re-encoding to JPEG (not just when downscaling is needed) means any
+// upload format canvas can decode — PNG, WebP, GIF, BMP, an already-small
+// photo — ends up as the same compact, predictable format heading into OCR.
+// Falls back to the original file if anything about decoding/encoding fails.
 function downscaleForOcr(file: File, maxDim = 1800, quality = 0.85): Promise<File> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -114,11 +98,7 @@ function downscaleForOcr(file: File, maxDim = 1800, quality = 0.85): Promise<Fil
     img.onload = () => {
       URL.revokeObjectURL(url);
       const longestSide = Math.max(img.naturalWidth, img.naturalHeight);
-      if (longestSide <= maxDim) {
-        resolve(file);
-        return;
-      }
-      const scale = maxDim / longestSide;
+      const scale = longestSide > maxDim ? maxDim / longestSide : 1;
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(img.naturalWidth * scale);
       canvas.height = Math.round(img.naturalHeight * scale);
@@ -307,7 +287,12 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
     let tesseractFailed = false;
     try {
       const { recognize } = await import('tesseract.js');
-      const result = await recognize(ocrFile, 'eng');
+      // Without a custom errorHandler, tesseract.js's worker.onmessage both
+      // rejects the job promise (which our catch below handles) AND
+      // synchronously re-throws the same error — surfacing as an uncaught
+      // exception regardless of this try/catch. A no-op handler suppresses
+      // that redundant throw; the rejection still flows through normally.
+      const result = await recognize(ocrFile, 'eng', { errorHandler: () => {} });
       candidate = extractVinCandidate(result.data.text);
     } catch {
       tesseractFailed = true;
