@@ -702,7 +702,7 @@ function PartRow({
       <td className="px-3 py-2 font-mono text-xs font-medium">
         <span className="inline-flex items-center gap-1.5">
           {part.partNumberFormatted ?? part.partNumber}
-          {part.partNumber && (
+          {part.partNumber && !isTm1Embedded && (
             <button
               type="button"
               onClick={handleCopy}
