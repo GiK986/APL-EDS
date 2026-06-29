@@ -70,16 +70,37 @@ function isHeic(file: File): boolean {
 // undownscaled original, which is what was blowing past the Server Action
 // body limit. Convert to JPEG first so the rest of the pipeline sees a format
 // every browser can decode, same as any other photo.
+//
+// heic2any's bundled libheif worker throws synchronously from its own
+// worker.onmessage handler on a decode failure ("Error attempting to read
+// image"), instead of rejecting the promise it returns — so a try/catch
+// around the call never fires, and the await just hangs forever. Race it
+// against a window 'error' listener to unstick that case with the same
+// original-file fallback as any other failure.
 async function convertHeicToJpeg(file: File): Promise<File> {
   if (!isHeic(file)) return file;
-  try {
-    const heic2any = (await import('heic2any')).default;
-    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
-    const blob = Array.isArray(result) ? result[0] : result;
-    return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
-  } catch {
-    return file;
-  }
+  return new Promise<File>((resolve) => {
+    let settled = false;
+    function finish(result: File) {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('error', onWindowError);
+      resolve(result);
+    }
+    function onWindowError(event: ErrorEvent) {
+      event.preventDefault();
+      finish(file);
+    }
+    window.addEventListener('error', onWindowError);
+
+    import('heic2any')
+      .then(({ default: heic2any }) => heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
+      .then((result) => {
+        const blob = Array.isArray(result) ? result[0] : result;
+        finish(new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' }));
+      })
+      .catch(() => finish(file));
+  });
 }
 
 // Phone camera photos routinely come in at several MB, which both slows down
@@ -269,14 +290,18 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
   }
 
   async function processFile(file: File) {
-    setImageUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return URL.createObjectURL(file);
-    });
     setStatus('scanning');
     setVin('');
 
-    const ocrFile = await downscaleForOcr(await convertHeicToJpeg(file));
+    // Convert before the preview too — a plain <img> can't render a HEIC
+    // blob URL any better than canvas can decode it for OCR.
+    const displayFile = await convertHeicToJpeg(file);
+    setImageUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(displayFile);
+    });
+
+    const ocrFile = await downscaleForOcr(displayFile);
 
     let candidate = '';
     let tesseractFailed = false;
