@@ -57,6 +57,31 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+function isHeic(file: File): boolean {
+  if (file.type === 'image/heic' || file.type === 'image/heif') return true;
+  // iOS/Android file pickers sometimes report a generic or empty MIME type
+  // for HEIC — the extension is the only reliable signal in that case.
+  return /\.(heic|heif)$/i.test(file.name);
+}
+
+// Chrome/Firefox/Edge have no native HEIC decoder (Safari does), so a HEIC
+// photo — the default iPhone camera format — fails to decode via <img>/canvas
+// entirely, falling through downscaleForOcr's error fallback as the full,
+// undownscaled original, which is what was blowing past the Server Action
+// body limit. Convert to JPEG first so the rest of the pipeline sees a format
+// every browser can decode, same as any other photo.
+async function convertHeicToJpeg(file: File): Promise<File> {
+  if (!isHeic(file)) return file;
+  try {
+    const heic2any = (await import('heic2any')).default;
+    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+    const blob = Array.isArray(result) ? result[0] : result;
+    return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
+
 // Phone camera photos routinely come in at several MB, which both slows down
 // OCR and can blow past the Server Action body limit once base64-encoded.
 // Downscaling to a VIN-plate-readable size keeps both paths fast and small,
@@ -251,7 +276,7 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
     setStatus('scanning');
     setVin('');
 
-    const ocrFile = await downscaleForOcr(file);
+    const ocrFile = await downscaleForOcr(await convertHeicToJpeg(file));
 
     let candidate = '';
     let tesseractFailed = false;
