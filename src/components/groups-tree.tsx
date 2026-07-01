@@ -223,7 +223,7 @@ export function GroupsTree({
 
         <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border">
           {/* Left panel: top-level groups */}
-          <div className="w-56 shrink-0 overflow-y-auto border-r border-border bg-muted/30">
+          <div className="min-w-80 shrink-0 overflow-y-auto border-r border-border bg-muted/30">
             {topGroups.length === 0 ? (
               <p className="px-3 py-2.5 text-sm text-muted-foreground">{t('noResults', lang)}</p>
             ) : (
