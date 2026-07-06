@@ -32,7 +32,8 @@ export async function setLang(value: string): Promise<void> {
   store.set('lang', value === 'bg' ? 'bg' : 'en', {
     path: '/',
     maxAge: 60 * 60 * 24 * 365,
-    sameSite: 'lax',
+    sameSite: 'none',
+    secure: true,
   });
 }
 
