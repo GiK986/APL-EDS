@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export const SESSION_COOKIE_NAME = 'apl_session';
 
-const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+export const SESSION_TTL_MS = 3 * 60 * 60 * 1000;
 
 function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -10,28 +10,39 @@ function getSessionSecret(): string {
   return secret;
 }
 
-function sign(expiryEpochMs: string, secret: string): string {
-  return createHmac('sha256', secret).update(expiryEpochMs).digest('hex');
+function sign(payload: string, secret: string): string {
+  return createHmac('sha256', secret).update(payload).digest('hex');
 }
 
-export function createSessionValue(): string {
+export function createSessionValue(sid: string): string {
   const secret = getSessionSecret();
-  const expiryEpochMs = String(Date.now() + SESSION_TTL_MS);
-  return `${expiryEpochMs}.${sign(expiryEpochMs, secret)}`;
+  const sidEncoded = Buffer.from(sid, 'utf8').toString('base64url');
+  const expiresAt = String(Date.now() + SESSION_TTL_MS);
+  const payload = `${sidEncoded}.${expiresAt}`;
+  return `${payload}.${sign(payload, secret)}`;
 }
 
-export function verifySessionValue(value: string): boolean {
+export interface SessionData {
+  sid: string;
+  expiresAt: number;
+}
+
+export function parseSessionValue(value: string): SessionData | null {
   const secret = getSessionSecret();
   const parts = value.split('.');
-  if (parts.length !== 2) return false;
+  if (parts.length !== 3) return null;
 
-  const [expiryEpochMs, hmacHex] = parts;
-  const expiry = Number(expiryEpochMs);
-  if (!Number.isFinite(expiry) || expiry <= Date.now()) return false;
-
-  const expected = Buffer.from(sign(expiryEpochMs, secret), 'hex');
+  const [sidEncoded, expiresAtStr, hmacHex] = parts;
+  const payload = `${sidEncoded}.${expiresAtStr}`;
+  const expected = Buffer.from(sign(payload, secret), 'hex');
   const actual = Buffer.from(hmacHex, 'hex');
-  if (expected.length !== actual.length) return false;
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
 
-  return timingSafeEqual(expected, actual);
+  const expiresAt = Number(expiresAtStr);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
+
+  const sid = Buffer.from(sidEncoded, 'base64url').toString('utf8');
+  if (!sid) return null;
+
+  return { sid, expiresAt };
 }
