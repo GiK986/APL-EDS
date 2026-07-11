@@ -41,6 +41,7 @@ export async function validateSid(sid: string): Promise<boolean> {
     return result.recordset.length > 0;
   } catch (err) {
     console.error('validateSid failed:', err);
+    pool?.then((p) => p.close()).catch(() => {});
     pool = undefined;
     return false;
   }
