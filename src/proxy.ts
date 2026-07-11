@@ -24,6 +24,13 @@ export async function proxy(request: NextRequest) {
 
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (sessionCookie && verifySessionValue(sessionCookie)) {
+    // TM1 appends ?sid= on every iframe load — strip it so it never lingers
+    // in browser history / sessionStorage once a valid session cookie exists.
+    if (request.nextUrl.searchParams.has('sid')) {
+      const cleanUrl = new URL(request.nextUrl);
+      cleanUrl.searchParams.delete('sid');
+      return NextResponse.redirect(cleanUrl, 302);
+    }
     return NextResponse.next();
   }
 
@@ -49,6 +56,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|images|videos|seo|forbidden).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico$|(?:images|videos|seo|catalog-logos|forbidden)(?:/|$)).*)',
   ],
 };
