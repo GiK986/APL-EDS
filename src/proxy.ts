@@ -51,7 +51,7 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  return NextResponse.rewrite(new URL('/forbidden', request.url));
+  return NextResponse.redirect(new URL('/forbidden', request.url), 302);
 }
 
 export const config = {
