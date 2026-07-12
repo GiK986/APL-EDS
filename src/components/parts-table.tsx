@@ -603,24 +603,24 @@ function PartsSectionTable({
       <table className="w-full text-sm">
         <thead className="sticky top-0 border-b border-border bg-muted/50">
           <tr>
-            <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground w-10">
+            <th className="px-3 py-2 text-left font-medium text-sm text-muted-foreground w-10">
               {t('position', lang)}
             </th>
-            <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">
+            <th className="px-3 py-2 text-left font-medium text-sm text-muted-foreground">
               {t('partNumber', lang)}
             </th>
-            <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground">
+            <th className="px-3 py-2 text-left font-medium text-sm text-muted-foreground">
               {t('partName', lang)}
             </th>
             {showQty && (
-              <th className="px-3 py-2 text-left font-medium text-xs text-muted-foreground w-16">
+              <th className="px-3 py-2 text-left font-medium text-sm text-muted-foreground w-16">
                 {t('qty', lang)}
               </th>
             )}
             {columns.map((col) => (
               <th
                 key={col.code}
-                className="px-3 py-2 text-left font-medium text-xs text-muted-foreground hidden lg:table-cell"
+                className="px-3 py-2 text-left font-medium text-sm text-muted-foreground hidden lg:table-cell"
               >
                 {col.label}
               </th>
@@ -698,8 +698,8 @@ function PartRow({
         isActive && 'bg-primary/15'
       )}
     >
-      <td className="px-3 py-2 text-center text-xs text-muted-foreground">{part.areaCode}</td>
-      <td className="px-3 py-2 font-mono text-xs font-medium">
+      <td className="px-3 py-2 text-center text-sm text-muted-foreground">{part.areaCode}</td>
+      <td className="px-3 py-2 font-mono text-sm font-medium">
         <span className="inline-flex items-center gap-1.5">
           {part.partNumberFormatted ?? part.partNumber}
           {part.partNumber && !isTm1Embedded && (
@@ -710,7 +710,7 @@ function PartRow({
               title={copied ? t('copiedPartNumber', lang) : t('copyPartNumber', lang)}
               className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
             </button>
           )}
           {part.partNumber && isTm1Embedded && (
@@ -721,7 +721,7 @@ function PartRow({
               title={t('searchOeAftermarket', lang)}
               className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              <Search className="h-3 w-3" />
+              <Search className="h-4 w-4" />
             </button>
           )}
         </span>
@@ -729,18 +729,18 @@ function PartRow({
       <td className="px-3 py-2">
         <div className="font-medium">{cleanText(part.displayName || part.partName)}</div>
         {part.displayName && part.partName !== part.displayName && (
-          <div className="text-xs text-muted-foreground">{cleanText(part.partName)}</div>
+          <div className="text-sm text-muted-foreground">{cleanText(part.partName)}</div>
         )}
       </td>
       {showQty && (
-        <td className="px-3 py-2 text-center text-xs">{part.qty?.note ?? part.qty?.qty ?? '—'}</td>
+        <td className="px-3 py-2 text-center text-sm">{part.qty?.note ?? part.qty?.qty ?? '—'}</td>
       )}
       {columns.map((col) => {
         const lines = attrCellLines(part.attributes, col.code).map(cleanText);
         return (
           <td
             key={col.code}
-            className="px-3 py-2 text-xs text-muted-foreground hidden lg:table-cell"
+            className="px-3 py-2 text-sm text-muted-foreground hidden lg:table-cell"
           >
             {lines.length
               ? lines.map((line, i) => <div key={i}>{highlightCodes(line, matchCodes)}</div>)
