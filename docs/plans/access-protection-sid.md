@@ -1,6 +1,7 @@
 # План: Защита на apl-eds от публичен достъп (SID проверка срещу MSSQL + IP allowlist)
 
 ## Context
+
 Приложението се публикува на `apl-eds.autoplus.bg` и се вгражда като iframe в TM1/Next
 Catalogue. В момента няма автентикация; единствената защита е Traefik IP allowlist в prod
 compose. Целта: случаен посетител да не ползва каталога; потребител, влязъл през TM1, да
@@ -20,6 +21,7 @@ compose. Целта: случаен посетител да не ползва к
 за да не стане четим от клиентски JS.
 
 ## Решени параметри
+
 - **View:** `[STORE_IT_APL_PROD].[dbo].[V_EXT_APL_EDS_SESSIONS]` — колони `SESSION_ID`,
   `LAST_LOGIN`, само активни потребители с ненулев SID. Съществува и работи (проверено).
 - **DB достъп:** read-only потребител; dev по външен адрес `31.13.228.173:1433`, prod по
@@ -30,6 +32,7 @@ compose. Целта: случаен посетител да не ползва к
 - **`SESSION_ID` се презаписва при всеки вход** — откраднат SID умира при следващ логин.
 
 ## Global Constraints
+
 - TypeScript strict, no `any`; named exports; 2-space indent; без коментари освен
   неочевидно WHY (стилът на репото).
 - Session cookie: httpOnly, `Secure`, **`SameSite=None`** (задължително за cross-origin
@@ -46,6 +49,7 @@ compose. Целта: случаен посетител да не ползва к
 Създай два модула в `src/lib/`:
 
 **`src/lib/session-cookie.ts`** — подписана session cookie стойност:
+
 - `createSessionValue(): string` → `"<expiryEpochMs>.<hmacHex>"`, където
   `hmacHex = HMAC-SHA256(String(expiryEpochMs), SESSION_SECRET)` (пълен hex digest);
   expiry = now + 8h.
@@ -55,6 +59,7 @@ compose. Целта: случаен посетител да не ползва к
 - Липсващ `SESSION_SECRET` env → throw при използване (както `yqFetch` прави с ключа).
 
 **`src/lib/session-db.ts`** — SID lookup:
+
 - `validateSid(sid: string): Promise<boolean>` с npm пакета `mssql` (добави го като
   dependency).
 - Connection pool като модулен singleton (глобален кеш, преживяващ повторни извиквания).
@@ -66,6 +71,7 @@ compose. Целта: случаен посетител да не ползва к
 - Всяка грешка (мрежа, auth, timeout ~5s) → `return false` + `console.error` (fail-closed).
 
 **Верификация (задължителна, срещу живата база):**
+
 - Вземи реален свеж SID: `sqlcmd query -q "SELECT TOP (1) SESSION_ID FROM [STORE_IT_APL_PROD].[dbo].[V_EXT_APL_EDS_SESSIONS] WHERE LAST_LOGIN >= DATEADD(HOUR, -8, GETDATE()) ORDER BY LAST_LOGIN DESC"`
   (sqlcmd е конфигуриран на машината).
 - Еднократен скрипт (`node --env-file=.env.local`, TS през `npx tsx` е ок) който:
@@ -102,6 +108,7 @@ Route handler-ът/страницата да върне статус 403 (виа
 страницата да се сервира с 200 след rewrite, допустимо е, но опитай първо с 403).
 
 **Верификация (задължителна, реален dev сървър):**
+
 - `npm run dev` (без `ACCESS_PROTECTION_DISABLED`), после curl матрицата:
   - `curl -i localhost:3000/` → forbidden съдържание;
   - `curl -i -H "x-real-ip: <IP от ALLOWED_IPS>" localhost:3000/` → каталогът;
@@ -113,10 +120,12 @@ Route handler-ът/страницата да върне статус 403 (виа
 - `npm run check` зелен. Комитни.
 
 ## Извън обхвата на задачите (ръчни стъпки при деплой — за човека)
+
 - `docker-compose.prod.yml` на прод сървъра: махане на `ipAllowList` от router-а,
   добавяне на env променливите (`DB_HOST` = вътрешния адрес, нов `SESSION_SECRET`).
 - TM1 iframe URL-ът да включва `?sid=<SESSION_ID>`.
-- Java проектът: SecureRandom суфикс (препратено отделно).
+- Java проектът: SecureRandom суфикс — виж [session-id-securerandom-suffix.md](session-id-securerandom-suffix.md)
+  (все още не е препратено към Java екипа).
 - Healthcheck-ът в gitignore-натия `docker-compose.prod.yml` на прод сървъра трябва да се
   коригира по същия начин като в tracked `docker-compose.yml` — да сочи към
   `http://localhost:3000/favicon.ico` вместо `/`, иначе gate-ът връща 403, контейнерът
@@ -126,6 +135,7 @@ Route handler-ът/страницата да върне статус 403 (виа
   Traefik е единственият вход; директно публикуван порт позволява подправен `x-real-ip`.
 
 ## Verification (цялостна, след двете задачи)
+
 - Curl матрицата от Task 2 + проверка че статика/OG не са счупени.
 - `npm run check` зелен.
 - Прод тестът в реалния TM1 iframe е след деплой, извън тази сесия.
