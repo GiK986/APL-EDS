@@ -23,7 +23,7 @@ export function RoutePersistence() {
     if (pathname !== '/') return;
     try {
       const saved = sessionStorage.getItem(LAST_PATH_KEY);
-      if (saved && saved !== '/' && saved !== '/forbidden') router.replace(saved);
+      if (saved && saved !== '/') router.replace(saved);
     } catch {
       // sessionStorage unavailable (e.g. partitioned/blocked third-party
       // storage in a cross-origin iframe) — just stay on '/'.
@@ -31,10 +31,7 @@ export function RoutePersistence() {
   }, [pathname, router]);
 
   // Record every navigation so the restore above has something to recover.
-  // Never record '/forbidden' itself — a fresh, validly-authenticated load
-  // must not get bounced straight back into the 403 wall by the restore above.
   useEffect(() => {
-    if (pathname === '/forbidden') return;
     const query = searchParams.toString();
     const current = query ? `${pathname}?${query}` : pathname;
     try {

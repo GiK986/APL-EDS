@@ -10,9 +10,6 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "4mb",
     },
-    // Enables the `forbidden()` function + `app/forbidden.tsx` boundary so
-    // the access-protection proxy can rewrite to a real 403 response.
-    authInterrupts: true,
   },
 };
 
