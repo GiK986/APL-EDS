@@ -31,6 +31,21 @@ export function useIsTm1Embedded(): boolean {
 // TM1's dispatcher accepts a JSON string (matches the addPartsToBasket
 // example captured live) — no confirmed postMessage response for this
 // command, so this is fire-and-forget.
+//
+// searchFilter: 66 = SearchFilters.OeReference | TradeReference_KARTREF — required,
+// otherwise openArticleList falls back to a plain text search that can match the
+// wrong article. useNewModal only takes effect if the TM1 tenant has the
+// useShowNewArticleList feature flag on; if it's off, TM1 falls back to the old
+// floating "(1)" modal on its own.
 export function openOeAftermarket(oeNumber: string): void {
-  window.parent.postMessage(JSON.stringify({ openOeAftermarket: { oeNumber } }), TM1_ORIGIN);
+  window.parent.postMessage(
+    JSON.stringify({
+      openArticleList: {
+        direct: { query: oeNumber, searchFilter: 66 },
+        inModal: true,
+        useNewModal: true,
+      },
+    }),
+    TM1_ORIGIN
+  );
 }
