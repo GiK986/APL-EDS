@@ -768,11 +768,13 @@ function PartRow({
           );
         })}
       </tr>
-      <PartInquiryPanel
-        part={inquiryOpen ? part : null}
-        onClose={() => setInquiryOpen(false)}
-        lang={lang}
-      />
+      {process.env.NODE_ENV !== 'production' && (
+        <PartInquiryPanel
+          part={inquiryOpen ? part : null}
+          onClose={() => setInquiryOpen(false)}
+          lang={lang}
+        />
+      )}
     </>
   );
 }
