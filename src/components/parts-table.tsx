@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Copy, Layers, Loader2, Minus, Plus, RotateCcw, Search } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Layers, Loader2, Minus, PackageSearch, Plus, RotateCcw, Search } from 'lucide-react';
 import { cleanText, cn, formatNoteValue } from '@/lib/utils';
 import { attrCellLines, computeAttrColumns, type AttrColumn } from '@/lib/attr-columns';
 import { highlightCodes } from '@/components/highlight-codes';
+import { PartInquiryPanel } from '@/components/catalog/part-inquiry-panel';
 import { openOeAftermarket, useIsTm1Embedded } from '@/lib/tm1-bridge';
 import { getGroupPartsAll } from '@/actions/yq';
 import type {
@@ -672,6 +673,7 @@ function PartRow({
   matchCodes,
 }: PartRowProps) {
   const [copied, setCopied] = useState(false);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
   const isTm1Embedded = useIsTm1Embedded();
 
   async function handleCopy(e: React.MouseEvent) {
@@ -686,68 +688,91 @@ function PartRow({
     openOeAftermarket(part.partNumber);
   }
 
+  function handleInquire(e: React.MouseEvent) {
+    e.stopPropagation();
+    setInquiryOpen(true);
+  }
+
   return (
-    <tr
-      ref={(el) => registerRowRef(part.areaCode, el)}
-      onMouseEnter={() => part.areaCode && onHover(part.areaCode)}
-      onMouseLeave={() => onHover(null)}
-      onClick={onClick}
-      className={cn(
-        'cursor-pointer transition-colors hover:bg-muted/40',
-        part.matched && 'bg-primary/5',
-        isActive && 'bg-primary/15'
-      )}
-    >
-      <td className="px-3 py-2 text-center text-sm text-muted-foreground">{part.areaCode}</td>
-      <td className="px-3 py-2 font-mono text-sm font-medium">
-        <span className="inline-flex items-center gap-1.5">
-          {part.partNumberFormatted ?? part.partNumber}
-          {part.partNumber && !isTm1Embedded && (
-            <button
-              type="button"
-              onClick={handleCopy}
-              aria-label={t('copyPartNumber', lang)}
-              title={copied ? t('copiedPartNumber', lang) : t('copyPartNumber', lang)}
-              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-            </button>
-          )}
-          {part.partNumber && isTm1Embedded && (
-            <button
-              type="button"
-              onClick={handleSearchOeAftermarket}
-              aria-label={t('searchOeAftermarket', lang)}
-              title={t('searchOeAftermarket', lang)}
-              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <Search className="h-4 w-4" />
-            </button>
-          )}
-        </span>
-      </td>
-      <td className="px-3 py-2">
-        <div className="font-medium">{cleanText(part.displayName || part.partName)}</div>
-        {part.displayName && part.partName !== part.displayName && (
-          <div className="text-sm text-muted-foreground">{cleanText(part.partName)}</div>
+    <>
+      <tr
+        ref={(el) => registerRowRef(part.areaCode, el)}
+        onMouseEnter={() => part.areaCode && onHover(part.areaCode)}
+        onMouseLeave={() => onHover(null)}
+        onClick={onClick}
+        className={cn(
+          'cursor-pointer transition-colors hover:bg-muted/40',
+          part.matched && 'bg-primary/5',
+          isActive && 'bg-primary/15'
         )}
-      </td>
-      {showQty && (
-        <td className="px-3 py-2 text-center text-sm">{part.qty?.note ?? part.qty?.qty ?? '—'}</td>
-      )}
-      {columns.map((col) => {
-        const lines = attrCellLines(part.attributes, col.code).map(cleanText);
-        return (
-          <td
-            key={col.code}
-            className="px-3 py-2 text-sm text-muted-foreground hidden lg:table-cell"
-          >
-            {lines.length
-              ? lines.map((line, i) => <div key={i}>{highlightCodes(line, matchCodes)}</div>)
-              : '—'}
-          </td>
-        );
-      })}
-    </tr>
+      >
+        <td className="px-3 py-2 text-center text-sm text-muted-foreground">{part.areaCode}</td>
+        <td className="px-3 py-2 font-mono text-sm font-medium">
+          <span className="inline-flex items-center gap-1.5">
+            {part.partNumberFormatted ?? part.partNumber}
+            {part.partNumber && !isTm1Embedded && (
+              <button
+                type="button"
+                onClick={handleCopy}
+                aria-label={t('copyPartNumber', lang)}
+                title={copied ? t('copiedPartNumber', lang) : t('copyPartNumber', lang)}
+                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              </button>
+            )}
+            {part.partNumber && isTm1Embedded && (
+              <button
+                type="button"
+                onClick={handleSearchOeAftermarket}
+                aria-label={t('searchOeAftermarket', lang)}
+                title={t('searchOeAftermarket', lang)}
+                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            )}
+            {part.partNumber && process.env.NODE_ENV !== 'production' && (
+              <button
+                type="button"
+                onClick={handleInquire}
+                aria-label={t('inquireOemPart', lang)}
+                title={t('inquireOemPart', lang)}
+                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <PackageSearch className="h-4 w-4" />
+              </button>
+            )}
+          </span>
+        </td>
+        <td className="px-3 py-2">
+          <div className="font-medium">{cleanText(part.displayName || part.partName)}</div>
+          {part.displayName && part.partName !== part.displayName && (
+            <div className="text-sm text-muted-foreground">{cleanText(part.partName)}</div>
+          )}
+        </td>
+        {showQty && (
+          <td className="px-3 py-2 text-center text-sm">{part.qty?.note ?? part.qty?.qty ?? '—'}</td>
+        )}
+        {columns.map((col) => {
+          const lines = attrCellLines(part.attributes, col.code).map(cleanText);
+          return (
+            <td
+              key={col.code}
+              className="px-3 py-2 text-sm text-muted-foreground hidden lg:table-cell"
+            >
+              {lines.length
+                ? lines.map((line, i) => <div key={i}>{highlightCodes(line, matchCodes)}</div>)
+                : '—'}
+            </td>
+          );
+        })}
+      </tr>
+      <PartInquiryPanel
+        part={inquiryOpen ? part : null}
+        onClose={() => setInquiryOpen(false)}
+        lang={lang}
+      />
+    </>
   );
 }
