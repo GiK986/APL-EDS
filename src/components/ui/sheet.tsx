@@ -61,7 +61,7 @@ function SheetContent({
             render={
               <Button
                 variant="default"
-                className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 rounded-[3px] bg-[rgb(100,101,103)] hover:bg-[rgb(100,101,103)]/90"
+                className="absolute top-[calc(50%-16px)] left-[-16px] rounded-[3px] bg-[rgb(100,101,103)] hover:bg-[rgb(100,101,103)]/90"
                 size="icon"
               />
             }
