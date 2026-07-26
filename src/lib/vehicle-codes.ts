@@ -3,19 +3,20 @@ import type { VehicleV2Dto } from '@/types/yq';
 export const ENGINE_ATTR_CODES = ['engine', 'enginecode', 'motor', 'motorcode'];
 const TRANSMISSION_ATTR_CODES = ['gearbox', 'transmission', 'getriebe'];
 
-// Vehicle attribute values mix the short code catalogs reference (e.g.
-// "BKC", "FVH") with descriptive text and multiple codes per field (e.g.
-// "FVH(5S);, GQQ(5S)" or "N57Z (3000CC / 230kW)"). Split on the common
-// separators and keep only the leading code token from each segment.
+// Some vehicles pack multiple codes into a single attribute value (e.g.
+// "FVH(5S);, GQQ(5S)") — split on the common separators so each one can be
+// matched on its own; a diagram's Note text carries one at a time, not the
+// joined value. Keep each whole segment instead of truncating it down to a
+// leading token — the full segment is what actually shows up in Notes.
 function extractCodes(value: string): string[] {
   return value
     .split(/[,;]+/)
-    .map((segment) => segment.trim().match(/^[A-Z0-9]+/i)?.[0])
-    .filter((code): code is string => !!code);
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
 }
 
 function findCodes(vehicle: VehicleV2Dto, attrCodes: string[]): string[] {
-  const attr = vehicle.attributes.find((a) => attrCodes.includes(a.code.toLowerCase()));
+  const attr = (vehicle.attributes ?? []).find((a) => attrCodes.includes(a.code.toLowerCase()));
   if (!attr) return [];
   return attr.values.flatMap(extractCodes);
 }
