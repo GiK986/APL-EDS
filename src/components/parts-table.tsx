@@ -701,7 +701,7 @@ function PartRow({
         onMouseLeave={() => onHover(null)}
         onClick={onClick}
         className={cn(
-          'cursor-pointer transition-colors hover:bg-muted/40',
+          'cursor-pointer transition-colors',
           part.matched && 'bg-primary/5',
           isActive && 'bg-primary/15'
         )}
