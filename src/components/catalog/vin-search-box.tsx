@@ -27,7 +27,7 @@ interface RecentVehicle {
 }
 
 function findAttr(vehicle: VehicleV2Dto, codes: string[]) {
-  return vehicle.attributes.find((a) => codes.includes(a.code.toLowerCase()));
+  return (vehicle.attributes ?? []).find((a) => codes.includes(a.code.toLowerCase()));
 }
 
 function brandSlug(brand: string): string {
@@ -191,7 +191,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
               {directVehicles.map((v, i) => {
                 const engine = findAttr(v, ENGINE_ATTR_CODES);
                 const body = findAttr(v, BODY_ATTR_CODES);
-                const otherAttrs = v.attributes
+                const otherAttrs = (v.attributes ?? [])
                   .filter((a) => a !== engine && a !== body)
                   .slice(0, 4);
                 return (

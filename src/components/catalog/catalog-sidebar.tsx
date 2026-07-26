@@ -150,7 +150,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
                   )}
 
                   <dl className="space-y-1.5 text-sm">
-                    {vehicle.attributes.map((a) => (
+                    {(vehicle.attributes ?? []).map((a) => (
                       <div key={a.code} className="flex justify-between gap-3">
                         <dt className="text-muted-foreground">{a.label}</dt>
                         <dd className="text-right font-medium">{a.values.join(', ')}</dd>

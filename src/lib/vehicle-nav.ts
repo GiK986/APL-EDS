@@ -3,7 +3,9 @@ import type { VehicleV2Dto } from '@/types/yq';
 const MODEL_LABEL_ATTR_CODES = ['series_description', 'modeldescription', 'model_description'];
 
 function vehicleModelLabel(vehicle: VehicleV2Dto): string {
-  const attr = vehicle.attributes.find((a) => MODEL_LABEL_ATTR_CODES.includes(a.code.toLowerCase()));
+  const attr = (vehicle.attributes ?? []).find((a) =>
+    MODEL_LABEL_ATTR_CODES.includes(a.code.toLowerCase())
+  );
   return attr?.values[0] ?? vehicle.model;
 }
 

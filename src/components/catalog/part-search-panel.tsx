@@ -251,7 +251,7 @@ export function PartSearchPanel({
                     {v.brand} {v.model}
                   </div>
                   <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                    {v.attributes.slice(0, 4).map((a) => (
+                    {(v.attributes ?? []).slice(0, 4).map((a) => (
                       <span key={a.code}>
                         {a.label}: {a.values.join(', ')}
                       </span>
