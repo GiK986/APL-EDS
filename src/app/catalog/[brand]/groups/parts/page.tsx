@@ -406,6 +406,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
 
       <div className="mt-4">
         <PartsTable
+          key={token}
           categories={categories}
           unitInfoMap={unitInfoMap}
           allPartsToken={allPartsToken}

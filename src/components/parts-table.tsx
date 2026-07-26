@@ -122,7 +122,7 @@ export function PartsTable({
               setExpandedKey(null);
               setExpandedUnitData(null);
             }}
-            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-muted"
           >
             <ArrowLeft className="h-4 w-4" />
             {t('back', lang)}
@@ -393,7 +393,7 @@ function UnitPanel({
               type="button"
               onClick={onShowAll}
               disabled={isLoadingAll}
-              className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-50"
             >
               <Layers className="h-3.5 w-3.5" />
               {isLoadingAll ? t('loadingAllParts', lang) : t('showAllParts', lang)}
@@ -405,7 +405,7 @@ function UnitPanel({
       <div
         ref={containerRef}
         className={cn(
-          'flex overflow-hidden rounded-xl border border-border',
+          'flex overflow-hidden rounded-xl border border-border bg-card',
           fullHeight || tall ? 'min-h-0 flex-1' : 'h-[480px]'
         )}
       >
@@ -502,7 +502,7 @@ function UnitPanel({
           </div>
 
           {imageSrc && (
-            <div className="flex items-center gap-1 border-t border-border bg-background/80 px-2 py-1">
+            <div className="flex items-center gap-1 border-t border-border bg-card/80 px-2 py-1">
               <button
                 type="button"
                 onClick={() => zoomBy(-0.25)}

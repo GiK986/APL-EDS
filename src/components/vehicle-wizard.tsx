@@ -139,7 +139,7 @@ interface WizardFieldProps {
 
 function WizardField({ field, onChange, disabled }: WizardFieldProps) {
   return (
-    <div className="flex min-w-[180px] flex-1 flex-col border-r border-[#6e6e6e] last:border-r-0">
+    <div className="flex min-w-[180px] flex-1 flex-col border-r border-[#6e6e6e] bg-card last:border-r-0">
       <div className="bg-[#808285] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-[#e4e4e4]">
         {field.label}
       </div>

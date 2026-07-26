@@ -394,7 +394,7 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-1 rounded-md border border-border bg-background/80 px-2 py-1">
+              <div className="flex items-center gap-1 rounded-md border border-border bg-card/80 px-2 py-1">
                 <button
                   type="button"
                   onClick={() => zoomBy(-0.25)}
@@ -443,7 +443,7 @@ export function ScanVinModal({ open, onOpenChange, onConfirm, lang }: ScanVinMod
                 placeholder={
                   status === 'scanning' ? t('scanning', lang) : t('directEntryPlaceholder', lang)
                 }
-                className="w-full rounded-md border border-border bg-background px-3 py-1.5 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-md border border-border bg-card px-3 py-1.5 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
               />
               {status === 'scanning' && (
                 <p className="text-xs text-muted-foreground animate-pulse">

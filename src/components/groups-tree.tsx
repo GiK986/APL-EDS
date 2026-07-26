@@ -175,7 +175,7 @@ export function GroupsTree({
                 className={cn(
                   'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                   view === 'groups'
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -186,7 +186,7 @@ export function GroupsTree({
                 className={cn(
                   'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                   view === 'categories'
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -206,7 +206,7 @@ export function GroupsTree({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('searchGroupsPlaceholder', lang)}
-              className="w-full rounded-md border border-border bg-background py-2.5 pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border border-border bg-card py-2.5 pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             {query && (
               <button
@@ -221,7 +221,7 @@ export function GroupsTree({
           </div>
         </div>
 
-        <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border">
+        <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border bg-card">
           {/* Left panel: top-level groups */}
           <div className="min-w-80 shrink-0 overflow-y-auto border-r border-border bg-muted/30">
             {topGroups.length === 0 ? (

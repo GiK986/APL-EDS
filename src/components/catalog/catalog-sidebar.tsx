@@ -66,7 +66,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
               ? filterLevelFull
                 ? 'bg-green-600/15 text-green-700'
                 : 'bg-amber-500/15 text-amber-700'
-              : 'bg-background text-foreground',
+              : 'bg-card text-foreground',
             panelMode === 'vehicle' && 'ring-2 ring-primary/40'
           )}
         >
@@ -87,7 +87,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
       </aside>
 
       {open && (
-        <div className="w-72 shrink-0 overflow-y-auto border-r border-border bg-background p-4">
+        <div className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold">
               {panelMode === 'search' ? t('searchPart', lang) : t('vehicleDetails', lang)}

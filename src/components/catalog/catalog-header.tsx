@@ -55,7 +55,7 @@ export function CatalogHeader({ brand, brandLabel, catalogs, lang }: CatalogHead
   }
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-border bg-background px-4 sm:px-6">
+    <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-border bg-card px-4 sm:px-6">
       <button
         type="button"
         onClick={() => setModalOpen(true)}
@@ -73,7 +73,7 @@ export function CatalogHeader({ brand, brandLabel, catalogs, lang }: CatalogHead
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-background p-6 shadow-2xl"
+            className="max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">

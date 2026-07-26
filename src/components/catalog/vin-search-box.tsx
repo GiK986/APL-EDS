@@ -170,7 +170,7 @@ export function VinSearchBox({ brand, lang, className }: VinSearchBoxProps) {
         onFocus={() => setDirectOpen(true)}
         onKeyDown={(e) => e.key === 'Enter' && runSearch(directValue)}
         placeholder={t('directEntryPlaceholder', lang)}
-        className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+        className="w-full rounded-md border border-border bg-card px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
       />
 
       {directOpen && (
