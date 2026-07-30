@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Search, X } from 'lucide-react';
@@ -13,6 +13,19 @@ import { Breadcrumb, type BreadcrumbSegment } from '@/components/catalog/breadcr
 import type { GroupNodeV2Dto, UnitShortV2Dto } from '@/types/yq';
 
 type TreeView = 'groups' | 'categories';
+
+// Some brands attach a manufacturer group code (e.g. "01") to tree nodes
+// alongside the name — shown when present, e.g. "01 ENGINE HOUSING". Only
+// meaningful in "Categories" (partslink24's own group codes); the "Groups"
+// tab is TecDoc-universal and its codes aren't useful to the user there.
+function GroupLabel({ group, view }: { group: GroupNodeV2Dto; view: TreeView }): ReactNode {
+  if (view !== 'categories' || !group.code) return group.name;
+  return (
+    <>
+      <span className="font-bold">{group.code}</span> {group.name}
+    </>
+  );
+}
 
 // The full groups/categories tree arrives in one API call already fully
 // nested, so name search is a pure client-side filter — no extra requests.
@@ -239,7 +252,7 @@ export function GroupsTree({
                           : 'hover:bg-muted text-foreground'
                       )}
                     >
-                      {group.name}
+                      <GroupLabel group={group} view={view} />
                     </button>
                   </li>
                 ))}
@@ -258,11 +271,11 @@ export function GroupsTree({
                         href={selectedHeaderHref}
                         className="flex items-center justify-between hover:underline"
                       >
-                        <span>{selected.name}</span>
+                        <span><GroupLabel group={selected} view={view} /></span>
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </Link>
                     ) : (
-                      selected.name
+                      <GroupLabel group={selected} view={view} />
                     )}
                   </h2>
                 </div>
@@ -384,7 +397,9 @@ function SubGroupItem({
 
   if (!partsLink && !unitsLink && !hasChildren) {
     return (
-      <span className="text-sm text-muted-foreground">{group.name}</span>
+      <span className="text-sm text-muted-foreground">
+        <GroupLabel group={group} view={view} />
+      </span>
     );
   }
 
@@ -393,19 +408,24 @@ function SubGroupItem({
   // must win, or the children are silently dropped.
   if (!hasChildren && unitsLink) {
     return (
-      <CategoryUnitsList
-        token={unitsLink.token}
-        basePath={basePath}
-        groupsToken={groupsToken}
-        otherToken={otherToken}
-        vin={vin}
-        model={model}
-        vehicleInfoToken={vehicleInfoToken}
-        mainGroupName={mainGroupName}
-        lang={lang}
-        matchCodes={matchCodes}
-        searchQuery={searchQuery}
-      />
+      <div className="space-y-1">
+        <span className="text-sm font-medium">
+          <GroupLabel group={group} view={view} />
+        </span>
+        <CategoryUnitsList
+          token={unitsLink.token}
+          basePath={basePath}
+          groupsToken={groupsToken}
+          otherToken={otherToken}
+          vin={vin}
+          model={model}
+          vehicleInfoToken={vehicleInfoToken}
+          mainGroupName={mainGroupName}
+          lang={lang}
+          matchCodes={matchCodes}
+          searchQuery={searchQuery}
+        />
+      </div>
     );
   }
 
@@ -427,7 +447,9 @@ function SubGroupItem({
         href={href}
         className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-muted transition-colors group"
       >
-        <span className="font-medium">{group.name}</span>
+        <span className="font-medium">
+          <GroupLabel group={group} view={view} />
+        </span>
         <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
       </Link>
     );
@@ -458,11 +480,13 @@ function SubGroupItem({
           href={headerHref}
           className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-muted transition-colors group"
         >
-          <span>{group.name}</span>
+          <span><GroupLabel group={group} view={view} /></span>
           <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
         </Link>
       ) : (
-        <span className="text-sm font-medium">{group.name}</span>
+        <span className="text-sm font-medium">
+          <GroupLabel group={group} view={view} />
+        </span>
       )}
       {group.children && (
         <ul className="ml-3 space-y-0.5">
