@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { ChevronRight } from 'lucide-react';
 import { getCatalogs, getLang, searchVehicleByVinGlobal } from '@/actions/yq';
 import { BrandCard } from '@/components/brand-card';
 import { VinSearchBox } from '@/components/catalog/vin-search-box';
@@ -44,23 +45,26 @@ async function VinDeepLink({ vin, lang }: { vin: string; lang: Lang }) {
           <h1 className="text-sm font-semibold text-muted-foreground">
             {vin} &mdash; {matches.length} {t('vehicleFoundSuffix', lang)}
           </h1>
-          <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden">
             {matches.map(({ vehicle, href }, i) => (
               <li key={vehicle.token ?? i}>
                 <Link
                   href={href}
-                  className="block px-4 py-3 hover:bg-muted transition-colors"
+                  className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted transition-colors group"
                 >
-                  <div className="text-sm font-medium">
-                    {vehicle.brand} {vehicle.model}
+                  <div>
+                    <div className="text-sm font-medium">
+                      {vehicle.brand} {vehicle.model}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                      {(vehicle.attributes ?? []).slice(0, 4).map((a) => (
+                        <span key={a.code}>
+                          {a.label}: {a.values.join(', ')}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                    {(vehicle.attributes ?? []).slice(0, 4).map((a) => (
-                      <span key={a.code}>
-                        {a.label}: {a.values.join(', ')}
-                      </span>
-                    ))}
-                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </Link>
               </li>
             ))}
