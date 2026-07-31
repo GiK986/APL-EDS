@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Car, Search, X } from 'lucide-react';
+import { Car, Search, Send, X } from 'lucide-react';
 import { getVehicleInfo } from '@/actions/yq';
+import { findTecDocMatches, type TecDocMatch } from '@/actions/tecdoc';
 import { PartSearchPanel } from '@/components/catalog/part-search-panel';
+import { TecDocMatchSheet } from '@/components/catalog/tecdoc-match-sheet';
+import { useIsTm1Embedded } from '@/lib/tm1-bridge';
+import {
+  extractEngineCodeCandidates,
+  extractEnginePower,
+  extractVehicleYearMonth,
+} from '@/lib/vehicle-codes';
 import { t, type Lang } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { VehicleV2Dto } from '@/types/yq';
@@ -26,6 +34,10 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
   const [error, setError] = useState<string | null>(null);
   const [vehicle, setVehicle] = useState<VehicleV2Dto | null>(null);
   const [loadedToken, setLoadedToken] = useState<string | null>(null);
+  const isTm1Embedded = useIsTm1Embedded();
+  const [tecDocLoading, setTecDocLoading] = useState(false);
+  const [tecDocAdded, setTecDocAdded] = useState(false);
+  const [tecDocMatches, setTecDocMatches] = useState<TecDocMatch[] | null>(null);
 
   useEffect(() => {
     if (!vehicleInfoToken || loadedToken === vehicleInfoToken) return;
@@ -47,6 +59,23 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
 
   function toggleMode(mode: PanelMode) {
     setPanelMode((prev) => (prev === mode ? null : mode));
+  }
+
+  async function handleSearchTecDoc() {
+    if (!vehicle) return;
+    setTecDocLoading(true);
+    setTecDocAdded(false);
+    try {
+      const matches = await findTecDocMatches({
+        brand: vehicle.brand,
+        engineCodeCandidates: extractEngineCodeCandidates(vehicle),
+        vehicleYearMonth: extractVehicleYearMonth(vehicle),
+        ...extractEnginePower(vehicle),
+      });
+      setTecDocMatches(matches);
+    } finally {
+      setTecDocLoading(false);
+    }
   }
 
   const filterLevel = vehicle?.sysProperties.find((p) => p.code === 'filter_level')?.value;
@@ -157,12 +186,40 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
                       </div>
                     ))}
                   </dl>
+
+                  {isTm1Embedded && (
+                    <div className="space-y-2 border-t border-border pt-3">
+                      <button
+                        type="button"
+                        onClick={handleSearchTecDoc}
+                        disabled={tecDocLoading}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-[3px] bg-[rgb(224,224,224)] px-3 py-1.5 text-sm font-medium text-[rgb(33,33,33)] transition-colors hover:bg-[rgb(100,101,103)] hover:text-white active:shadow-[0px_5px_5px_-3px_rgba(0,0,0,0.2),0px_8px_10px_1px_rgba(0,0,0,0.14),0px_3px_14px_2px_rgba(0,0,0,0.12)] disabled:opacity-50"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        {t('sendToTm1', lang)}
+                      </button>
+                      {tecDocAdded && (
+                        <p className="text-xs text-muted-foreground">{t('sendToTm1Sent', lang)}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </>
           )}
         </div>
       )}
+
+      <TecDocMatchSheet
+        matches={tecDocMatches}
+        vin={vin}
+        onClose={() => setTecDocMatches(null)}
+        onAdd={() => {
+          setTecDocMatches(null);
+          setTecDocAdded(true);
+        }}
+        lang={lang}
+      />
     </div>
   );
 }

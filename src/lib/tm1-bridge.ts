@@ -49,3 +49,31 @@ export function openOeAftermarket(oeNumber: string): void {
     TM1_ORIGIN
   );
 }
+
+// Sets the vehicle on TM1's currently-open work task from a TecDoc K-Type
+// number alone — TM1 loads the full vehicle record itself server-side (see
+// module 691990 / channel "VEHICLE/SET_VEHICLE_TECDOC_NUMBER" in TM1's own
+// bundle). No confirmed postMessage response for this command either.
+export function setVehicleTecDocNumber(tecDocNumber: number, vehicleType?: number): void {
+  window.parent.postMessage(
+    JSON.stringify({
+      setVehicleTecDocNumber: { tecDocNumber, ...(vehicleType && { vehicleType }) },
+    }),
+    TM1_ORIGIN
+  );
+}
+
+// Merges VIN (and other identity fields) onto whatever vehicle is already
+// attached to the current work task (module 80936) — a no-op if no vehicle
+// is attached yet. Must be sent after setVehicleTecDocNumber, not before:
+// that command resolves asynchronously (it fetches the full TecDoc model
+// before attaching), and this one only has something to merge onto once
+// that attach has actually happened.
+export function setVehicleProperties(props: {
+  vin?: string;
+  plateId?: string;
+  mileAge?: string;
+  initialRegistration?: string;
+}): void {
+  window.parent.postMessage(JSON.stringify({ setVehicleProperties: props }), TM1_ORIGIN);
+}

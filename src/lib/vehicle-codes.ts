@@ -32,3 +32,73 @@ export function getHighlightCodes(vehicle: VehicleV2Dto | null | undefined): str
     new Set([...findCodes(vehicle, ENGINE_ATTR_CODES), ...findCodes(vehicle, TRANSMISSION_ATTR_CODES)])
   );
 }
+
+// Attributes that, across the brands seen so far, sometimes carry the
+// manufacturer engine code buried inside a longer free-text description
+// (e.g. Mercedes has no clean "engine" attribute at all — the code shows up
+// as "OM640" inside "aggregates": "M - Engine: 640940 ... (640.940 OM640,
+// R4 DIESEL ENGINE OM640 DE 20 LA); ...").
+const ENGINE_TEXT_FALLBACK_CODES = ['aggregates', 'engine_info', 'description'];
+
+// A "code-shaped" token: starts with a letter, 3-8 chars total. Kept if it
+// contains a digit (catches "B38N", "DV5RC", "OM640") or is short pure
+// letters (catches "CHYB"-style codes with no digit at all) — long pure-word
+// tokens ("ENGINE", "DIESEL") are dropped since real engine codes are rarely
+// >5 letters with zero digits.
+function codeShapedTokens(text: string): string[] {
+  const tokens = text.toUpperCase().match(/[A-Z][A-Z0-9]{2,7}/g) ?? [];
+  return tokens.filter((t) => /[0-9]/.test(t) || t.length <= 5);
+}
+
+// Some brands (seen live on BMW: YQ's "B38N" vs TecDoc's own "B38 A15 M")
+// use a trailing variant letter that doesn't correspond to TecDoc's own
+// suffix at all — only the "family" prefix (letters + digit run) is shared.
+// Adding that shorter stem as an extra candidate lets those still surface as
+// TecDoc matches, disambiguated afterwards by the kW/HP/date scoring instead
+// of by the suffix letter.
+function withStems(tokens: string[]): string[] {
+  const stems = tokens
+    .map((t) => t.match(/^[A-Z]{1,4}[0-9]{2,5}/)?.[0])
+    .filter((s): s is string => Boolean(s));
+  return [...tokens, ...stems];
+}
+
+// Returns candidate manufacturer engine codes for TecDoc K-Type matching —
+// deliberately over-inclusive (real code plus some harmless noise tokens is
+// fine, the caller validates each candidate against TecDoc's own engine
+// table and noise simply won't match anything there).
+export function extractEngineCodeCandidates(vehicle: VehicleV2Dto): string[] {
+  const attrs = vehicle.attributes ?? [];
+  const clean = attrs.filter((a) => ENGINE_ATTR_CODES.includes(a.code.toLowerCase()));
+  const source = clean.length
+    ? clean
+    : attrs.filter((a) => ENGINE_TEXT_FALLBACK_CODES.includes(a.code.toLowerCase()));
+  const candidates = withStems(source.flatMap((a) => a.values.flatMap(codeShapedTokens)));
+  return Array.from(new Set(candidates)).slice(0, 8);
+}
+
+// Parses kW/HP out of whatever free text carries them ("1000CC / 75hp /
+// 55kW SRE", "B38N (115kW)") — used only as a scoring signal when ranking
+// TecDoc K-Type candidates, never as a hard filter.
+export function extractEnginePower(vehicle: VehicleV2Dto): { kw?: number; hp?: number } {
+  const text = (vehicle.attributes ?? [])
+    .filter((a) => ['engine', 'engine_info'].includes(a.code.toLowerCase()))
+    .flatMap((a) => a.values)
+    .join(' ');
+  const kw = text.match(/(\d+)\s*kW/i)?.[1];
+  const hp = text.match(/(\d+)\s*hp/i)?.[1];
+  return { kw: kw ? Number(kw) : undefined, hp: hp ? Number(hp) : undefined };
+}
+
+// Vehicle production date as YYYYMM (matches TecDoc's ModYFrom/ModYTo
+// format) for containment scoring — prefers the precise "date" attribute
+// (DD.MM.YYYY) over the coarser year-only "manufactured" attribute.
+export function extractVehicleYearMonth(vehicle: VehicleV2Dto): number | undefined {
+  const attrs = vehicle.attributes ?? [];
+  const date = attrs.find((a) => a.code.toLowerCase() === 'date')?.values[0];
+  const dateMatch = date?.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (dateMatch) return Number(dateMatch[3]) * 100 + Number(dateMatch[2]);
+  const year = attrs.find((a) => a.code.toLowerCase() === 'manufactured')?.values[0];
+  if (year && /^\d{4}$/.test(year)) return Number(year) * 100 + 1;
+  return undefined;
+}
