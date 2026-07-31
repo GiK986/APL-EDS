@@ -38,6 +38,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
   const [tecDocLoading, setTecDocLoading] = useState(false);
   const [tecDocAdded, setTecDocAdded] = useState(false);
   const [tecDocMatches, setTecDocMatches] = useState<TecDocMatch[] | null>(null);
+  const [tecDocError, setTecDocError] = useState(false);
 
   useEffect(() => {
     if (!vehicleInfoToken || loadedToken === vehicleInfoToken) return;
@@ -65,6 +66,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
     if (!vehicle) return;
     setTecDocLoading(true);
     setTecDocAdded(false);
+    setTecDocError(false);
     try {
       const matches = await findTecDocMatches({
         brand: vehicle.brand,
@@ -73,6 +75,8 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
         ...extractEnginePower(vehicle),
       });
       setTecDocMatches(matches);
+    } catch {
+      setTecDocError(true);
     } finally {
       setTecDocLoading(false);
     }
@@ -200,6 +204,9 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
                       </button>
                       {tecDocAdded && (
                         <p className="text-xs text-muted-foreground">{t('sendToTm1Sent', lang)}</p>
+                      )}
+                      {tecDocError && (
+                        <p className="text-xs text-destructive">{t('sendToTm1SearchFailed', lang)}</p>
                       )}
                     </div>
                   )}
