@@ -20,6 +20,7 @@ export interface TecDocMatch {
 
 interface FindTecDocMatchesInput {
   brand: string;
+  model?: string;
   engineCodeCandidates: string[];
   vehicleYearMonth?: number;
   kw?: number;
@@ -70,6 +71,19 @@ function brandManNoMatches(vehicleBrand: string, manNo: number): boolean {
   return mapping ? mapping.tecdocManNo.includes(manNo) : false;
 }
 
+// YQ's vehicle.model (e.g. "CR-V") against TecDoc's own model series text
+// (e.g. "CR-V II (RD_)") — a signal we weren't using at all before, and one
+// that matters most exactly when engine code + date + brand all tie (e.g.
+// Honda's K20 engine family shared across CR-V/Civic/Stream/Integra, none
+// of which reliably report kW/HP for YQ to disambiguate with otherwise).
+function modelMatches(vehicleModel: string | undefined, modelSeriesText: string): boolean {
+  if (!vehicleModel) return false;
+  const vm = normalizeCode(vehicleModel);
+  const ts = normalizeCode(modelSeriesText);
+  if (!vm || !ts) return false;
+  return ts.includes(vm) || vm.includes(ts);
+}
+
 function dateWithinRange(vehicleYearMonth: number, modYFrom: number, modYTo: number): 'exact' | 'close' | 'no' {
   const from = modYFrom || 0;
   const to = modYTo || 999999;
@@ -103,6 +117,7 @@ interface TecDocRow {
 // live-tested VW/Mercedes/BMW/Peugeot cases this is built against.
 export async function findTecDocMatches({
   brand,
+  model,
   engineCodeCandidates,
   vehicleYearMonth,
   kw,
@@ -191,6 +206,7 @@ export async function findTecDocMatches({
     // the same engine, date range, kW and HP).
     if (brandManNoMatches(brand, row.ManNo)) score += 6;
     else if (brandMatches(brand, row.ManCode)) score += 4;
+    if (modelMatches(model, termByCTermNo.get(row.ModelSeriesCTermNo) ?? '')) score += 3;
 
     return { row, score };
   });

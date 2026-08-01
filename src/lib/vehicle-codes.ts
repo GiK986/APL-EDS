@@ -1,7 +1,11 @@
 import type { VehicleV2Dto } from '@/types/yq';
+import { resolveExtractionRules } from '@/lib/tecdoc-vehicle-rules';
 
 export const ENGINE_ATTR_CODES = ['engine', 'enginecode', 'motor', 'motorcode'];
 const TRANSMISSION_ATTR_CODES = ['gearbox', 'transmission', 'getriebe'];
+// Opel (GM-era) reports this under "production_date" instead of "date" —
+// live-verified, no "manufactured" attribute at all for that catalog either.
+const DATE_ATTR_CODES = ['date', 'production_date'];
 
 // Some vehicles pack multiple codes into a single attribute value (e.g.
 // "FVH(5S);, GQQ(5S)") — split on the common separators so each one can be
@@ -73,7 +77,9 @@ export function extractEngineCodeCandidates(vehicle: VehicleV2Dto): string[] {
   const source = clean.length
     ? clean
     : attrs.filter((a) => ENGINE_TEXT_FALLBACK_CODES.includes(a.code.toLowerCase()));
-  const candidates = withStems(source.flatMap((a) => a.values.flatMap(codeShapedTokens)));
+  const tokens = source.flatMap((a) => a.values.flatMap(codeShapedTokens));
+  const rules = resolveExtractionRules(vehicle.brand);
+  const candidates = rules.useEngineCodeStems === false ? tokens : withStems(tokens);
   return Array.from(new Set(candidates)).slice(0, 8);
 }
 
@@ -95,7 +101,7 @@ export function extractEnginePower(vehicle: VehicleV2Dto): { kw?: number; hp?: n
 // (DD.MM.YYYY) over the coarser year-only "manufactured" attribute.
 export function extractVehicleYearMonth(vehicle: VehicleV2Dto): number | undefined {
   const attrs = vehicle.attributes ?? [];
-  const date = attrs.find((a) => a.code.toLowerCase() === 'date')?.values[0];
+  const date = attrs.find((a) => DATE_ATTR_CODES.includes(a.code.toLowerCase()))?.values[0];
   const dateMatch = date?.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
   if (dateMatch) return Number(dateMatch[3]) * 100 + Number(dateMatch[2]);
   const year = attrs.find((a) => a.code.toLowerCase() === 'manufactured')?.values[0];
@@ -117,7 +123,9 @@ export function extractEngineCode(vehicle: VehicleV2Dto): string | undefined {
 // (DD.MM.YYYY). Some brands may carry this under a different attribute or
 // not report one at all (returns undefined then).
 export function extractInitialRegistration(vehicle: VehicleV2Dto): string | undefined {
-  const date = (vehicle.attributes ?? []).find((a) => a.code.toLowerCase() === 'date')?.values[0];
+  const date = (vehicle.attributes ?? []).find((a) =>
+    DATE_ATTR_CODES.includes(a.code.toLowerCase())
+  )?.values[0];
   const match = date?.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
   if (!match) return undefined;
   const [, day, month, year] = match;

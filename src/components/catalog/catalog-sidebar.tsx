@@ -88,6 +88,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
     try {
       const matches = await findTecDocMatches({
         brand: vehicle.brand,
+        model: vehicle.model,
         engineCodeCandidates: extractEngineCodeCandidates(vehicle),
         vehicleYearMonth: extractVehicleYearMonth(vehicle),
         ...extractEnginePower(vehicle),
