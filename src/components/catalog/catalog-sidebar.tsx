@@ -9,8 +9,10 @@ import { PartSearchPanel } from '@/components/catalog/part-search-panel';
 import { TecDocMatchSheet } from '@/components/catalog/tecdoc-match-sheet';
 import { getCustomerData, useIsTm1Embedded } from '@/lib/tm1-bridge';
 import {
+  extractEngineCode,
   extractEngineCodeCandidates,
   extractEnginePower,
+  extractInitialRegistration,
   extractVehicleYearMonth,
 } from '@/lib/vehicle-codes';
 import { t, type Lang } from '@/lib/i18n';
@@ -236,6 +238,8 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
       <TecDocMatchSheet
         matches={tecDocMatches}
         vin={vin}
+        engineCode={vehicle ? extractEngineCode(vehicle) : undefined}
+        initialRegistration={vehicle ? extractInitialRegistration(vehicle) : undefined}
         onClose={() => setTecDocMatches(null)}
         onAdd={() => {
           setTecDocMatches(null);

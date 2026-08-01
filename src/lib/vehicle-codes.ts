@@ -102,3 +102,24 @@ export function extractVehicleYearMonth(vehicle: VehicleV2Dto): number | undefin
   if (year && /^\d{4}$/.test(year)) return Number(year) * 100 + 1;
   return undefined;
 }
+
+// Single authoritative engine code to push to TM1 via setEngineCode — unlike
+// extractEngineCodeCandidates (deliberately over-inclusive for TecDoc fuzzy
+// matching), this is just the first clean value YQ itself reports. Some
+// brands may carry it under a different attribute, or not report one at all
+// (returns undefined then) — only ENGINE_ATTR_CODES is checked for now.
+export function extractEngineCode(vehicle: VehicleV2Dto): string | undefined {
+  return findCodes(vehicle, ENGINE_ATTR_CODES)[0];
+}
+
+// ISO 8601 string, the format TM1's setVehicleProperties expects for
+// initialRegistration (live-verified) — parsed from YQ's "date" attribute
+// (DD.MM.YYYY). Some brands may carry this under a different attribute or
+// not report one at all (returns undefined then).
+export function extractInitialRegistration(vehicle: VehicleV2Dto): string | undefined {
+  const date = (vehicle.attributes ?? []).find((a) => a.code.toLowerCase() === 'date')?.values[0];
+  const match = date?.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (!match) return undefined;
+  const [, day, month, year] = match;
+  return `${year}-${month}-${day}T00:00:00.000Z`;
+}

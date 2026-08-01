@@ -1,7 +1,12 @@
 'use client';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { setVehicleProperties, setVehicleTecDocNumber } from '@/lib/tm1-bridge';
+import {
+  getCustomerData,
+  setEngineCode,
+  setVehicleProperties,
+  setVehicleTecDocNumber,
+} from '@/lib/tm1-bridge';
 import { t, type Lang } from '@/lib/i18n';
 import type { TecDocMatch } from '@/actions/tecdoc';
 
@@ -11,28 +16,66 @@ function formatModelYear(yyyymm: number): string {
   return `${month}.${Math.floor(yyyymm / 100)}`;
 }
 
-// setVehicleTecDocNumber resolves asynchronously on TM1's side (it fetches
-// the full TecDoc model before attaching) and gives us no completion signal
-// — this delay before following up with the VIN is an empirical guess based
-// on the request chain observed live, not a real acknowledgement.
-const VEHICLE_ATTACH_DELAY_MS = 1500;
+// TM1 handles every one of these commands by re-merging onto whatever
+// props.workTask.vehicle currently is (see tm1-bridge.ts). Firing two of
+// them back-to-back is racy: the second one's merge is based on whatever
+// snapshot TM1's React tree happened to hold at that instant, which may not
+// yet include the first one's change — live-verified, an engineCode sent
+// right alongside setVehicleProperties got silently wiped out because
+// setVehicleProperties's own merge (based on the pre-engineCode snapshot)
+// landed after it. So these have to run in sequence, each one waiting for
+// the previous to actually be visible before the next fires.
+const ATTACH_POLL_INTERVAL_MS = 300;
+const ATTACH_POLL_TIMEOUT_MS = 6000;
+// engineCode has no readback (getCustomerData's vehicle shape doesn't
+// include it), so there's nothing to poll for after setEngineCode — this is
+// a fixed grace delay instead, empirically chosen the same way the original
+// blind delay was.
+const ENGINE_CODE_SETTLE_DELAY_MS = 800;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForVehicleAttach(): Promise<void> {
+  const deadline = Date.now() + ATTACH_POLL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const data = await getCustomerData();
+    if (data?.vehicle) return;
+    await delay(ATTACH_POLL_INTERVAL_MS);
+  }
+}
 
 interface TecDocMatchSheetProps {
   // null = closed, [] = searched but nothing found, non-empty = candidates to pick from
   matches: TecDocMatch[] | null;
   vin?: string;
+  engineCode?: string;
+  initialRegistration?: string;
   onClose: () => void;
   onAdd: () => void;
   lang: Lang;
 }
 
-export function TecDocMatchSheet({ matches, vin, onClose, onAdd, lang }: TecDocMatchSheetProps) {
-  function handleAdd(match: TecDocMatch) {
+export function TecDocMatchSheet({
+  matches,
+  vin,
+  engineCode,
+  initialRegistration,
+  onClose,
+  onAdd,
+  lang,
+}: TecDocMatchSheetProps) {
+  async function handleAdd(match: TecDocMatch) {
     setVehicleTecDocNumber(match.ktypNo);
-    if (vin) {
-      setTimeout(() => setVehicleProperties({ vin }), VEHICLE_ATTACH_DELAY_MS);
-    }
     onAdd();
+    if (!vin && !initialRegistration && !engineCode) return;
+    await waitForVehicleAttach();
+    if (engineCode) {
+      setEngineCode(engineCode);
+      await delay(ENGINE_CODE_SETTLE_DELAY_MS);
+    }
+    if (vin || initialRegistration) setVehicleProperties({ vin, initialRegistration });
   }
 
   return (

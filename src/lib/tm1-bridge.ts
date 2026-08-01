@@ -78,6 +78,14 @@ export function setVehicleProperties(props: {
   window.parent.postMessage(JSON.stringify({ setVehicleProperties: props }), TM1_ORIGIN);
 }
 
+// Separate command from setVehicleProperties (module 250749 in TM1's bundle,
+// live-verified) — engine code isn't one of setVehicleProperties's mergeable
+// fields. Same merge-onto-attached-vehicle requirement: no-op if no vehicle
+// is attached to the task yet.
+export function setEngineCode(engineCode: string): void {
+  window.parent.postMessage(JSON.stringify({ setEngineCode: { engineCode } }), TM1_ORIGIN);
+}
+
 export interface TM1VehicleData {
   licensePlate?: string;
   milageInKm?: number;
