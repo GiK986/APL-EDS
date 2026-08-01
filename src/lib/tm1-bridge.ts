@@ -77,3 +77,53 @@ export function setVehicleProperties(props: {
 }): void {
   window.parent.postMessage(JSON.stringify({ setVehicleProperties: props }), TM1_ORIGIN);
 }
+
+export interface TM1VehicleData {
+  licensePlate?: string;
+  milageInKm?: number;
+  vin?: string;
+  initialRegistration?: string;
+  nextGeneralInspection?: string;
+  lastGeneralInspection?: string;
+  nextServiceDate?: string;
+  kba?: string;
+}
+
+export interface TM1CustomerData {
+  traderDescription?: string;
+  customer?: { name?: string };
+  vehicle?: TM1VehicleData;
+}
+
+const GET_CUSTOMER_DATA_TIMEOUT_MS = 4000;
+
+// Request/response pair (module 157113 in TM1's bundle, live-verified): TM1 posts
+// back { setCustomerData: {...} } with a `vehicle` key that's entirely absent
+// (not null) when the current work task has no vehicle attached yet — the only
+// reliable signal we have for "is it safe to attach a vehicle to this task".
+export function getCustomerData(): Promise<TM1CustomerData | null> {
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      window.removeEventListener('message', handler);
+      resolve(null);
+    }, GET_CUSTOMER_DATA_TIMEOUT_MS);
+
+    function handler(event: MessageEvent) {
+      if (event.origin !== TM1_ORIGIN) return;
+      let data: unknown = event.data;
+      try {
+        if (typeof data === 'string') data = JSON.parse(data);
+      } catch {
+        return;
+      }
+      if (data && typeof data === 'object' && 'setCustomerData' in data) {
+        clearTimeout(timeout);
+        window.removeEventListener('message', handler);
+        resolve((data as { setCustomerData: TM1CustomerData }).setCustomerData);
+      }
+    }
+
+    window.addEventListener('message', handler);
+    window.parent.postMessage(JSON.stringify({ getCustomerData: true }), TM1_ORIGIN);
+  });
+}

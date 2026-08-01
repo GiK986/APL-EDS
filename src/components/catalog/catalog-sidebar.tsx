@@ -7,7 +7,7 @@ import { getVehicleInfo } from '@/actions/yq';
 import { findTecDocMatches, type TecDocMatch } from '@/actions/tecdoc';
 import { PartSearchPanel } from '@/components/catalog/part-search-panel';
 import { TecDocMatchSheet } from '@/components/catalog/tecdoc-match-sheet';
-import { useIsTm1Embedded } from '@/lib/tm1-bridge';
+import { getCustomerData, useIsTm1Embedded } from '@/lib/tm1-bridge';
 import {
   extractEngineCodeCandidates,
   extractEnginePower,
@@ -39,6 +39,22 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
   const [tecDocAdded, setTecDocAdded] = useState(false);
   const [tecDocMatches, setTecDocMatches] = useState<TecDocMatch[] | null>(null);
   const [tecDocError, setTecDocError] = useState(false);
+  // null = not checked yet — kept hidden until we know for sure, since attaching
+  // a TecDoc vehicle to a task that already has a different one risks corrupting
+  // the wrong vehicle's VIN (see setVehicleProperties's merge-onto-current-task behavior).
+  const [tm1TaskHasVehicle, setTm1TaskHasVehicle] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!isTm1Embedded || panelMode !== 'vehicle') return;
+    let cancelled = false;
+    setTm1TaskHasVehicle(null);
+    getCustomerData().then((data) => {
+      if (!cancelled) setTm1TaskHasVehicle(!!data?.vehicle);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isTm1Embedded, panelMode]);
 
   useEffect(() => {
     if (!vehicleInfoToken || loadedToken === vehicleInfoToken) return;
@@ -182,17 +198,8 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
                     </div>
                   )}
 
-                  <dl className="space-y-1.5 text-sm">
-                    {(vehicle.attributes ?? []).map((a) => (
-                      <div key={a.code} className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground">{a.label}</dt>
-                        <dd className="text-right font-medium">{a.values.join(', ')}</dd>
-                      </div>
-                    ))}
-                  </dl>
-
-                  {isTm1Embedded && (
-                    <div className="space-y-2 border-t border-border pt-3">
+                  {isTm1Embedded && tm1TaskHasVehicle === false && (
+                    <div className="space-y-2">
                       <button
                         type="button"
                         onClick={handleSearchTecDoc}
@@ -210,6 +217,15 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
                       )}
                     </div>
                   )}
+
+                  <dl className="space-y-1.5 text-sm">
+                    {(vehicle.attributes ?? []).map((a) => (
+                      <div key={a.code} className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">{a.label}</dt>
+                        <dd className="text-right font-medium">{a.values.join(', ')}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               )}
             </>
@@ -224,6 +240,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
         onAdd={() => {
           setTecDocMatches(null);
           setTecDocAdded(true);
+          setTm1TaskHasVehicle(true);
         }}
         lang={lang}
       />
