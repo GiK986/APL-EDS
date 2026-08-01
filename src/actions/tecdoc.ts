@@ -1,6 +1,7 @@
 'use server';
 
 import { getTecDocPool } from '@/lib/tecdoc-db';
+import { TECDOC_BRAND_MAP } from '@/lib/tecdoc-brand-map';
 
 export interface TecDocMatch {
   ktypNo: number;
@@ -58,6 +59,17 @@ function brandMatches(vehicleBrand: string, manCode: string): boolean {
   return brand.includes(code) || code.includes(brand);
 }
 
+// Precise DT100.ManNo match via TECDOC_BRAND_MAP — unlike brandMatches
+// (fuzzy ManCode substring, unreliable for closely-related manufacturer
+// rows), this is exact-or-nothing. Matters most for badge-engineered
+// platform siblings sharing identical specs, e.g. VW up! vs Škoda Citigo
+// vs Seat Mii: their ManNo (121/106/104) are unambiguous even though a
+// substring match on ManCode alone can't fully separate them.
+function brandManNoMatches(vehicleBrand: string, manNo: number): boolean {
+  const mapping = TECDOC_BRAND_MAP[vehicleBrand.toUpperCase()];
+  return mapping ? mapping.tecdocManNo.includes(manNo) : false;
+}
+
 function dateWithinRange(vehicleYearMonth: number, modYFrom: number, modYTo: number): 'exact' | 'close' | 'no' {
   const from = modYFrom || 0;
   const to = modYTo || 999999;
@@ -78,6 +90,7 @@ interface TecDocRow {
   ccmTech: number;
   Cyl: number;
   FuelType: number;
+  ManNo: number;
   ManCode: string;
 }
 
@@ -104,7 +117,7 @@ export async function findTecDocMatches({
       request.input('pattern', `%${normalizeCode(candidate)}%`);
       const result = await request.query<TecDocRow>(`
         SELECT DISTINCT v.KTypNo, ms.CTermNo AS ModelSeriesCTermNo, v.CTermNo AS TypeCTermNo,
-          v.ModYFrom, v.ModYTo, v.KW, v.HP, v.ccmTech, v.Cyl, v.FuelType, m.ManCode
+          v.ModYFrom, v.ModYTo, v.KW, v.HP, v.ccmTech, v.Cyl, v.FuelType, m.ManNo, m.ManCode
         FROM [DT155 Engines] e
         JOIN [DT125 Engine Number Allocation to Vehicle Types] r ON r.EngNo = e.EngNo
         JOIN [DT120 Vehicle Types] v ON v.KTypNo = r.KTypNo
@@ -163,7 +176,7 @@ export async function findTecDocMatches({
     engineCodesByKTypNo.set(row.KTypNo, list);
   }
 
-  const matches: TecDocMatch[] = Array.from(byKTypNo.values()).map((row) => {
+  const scored = Array.from(byKTypNo.values()).map((row) => {
     let score = 0;
     if (vehicleYearMonth) {
       const range = dateWithinRange(vehicleYearMonth, row.ModYFrom, row.ModYTo);
@@ -172,28 +185,45 @@ export async function findTecDocMatches({
     }
     if (kw && row.KW && Math.abs(kw - row.KW) <= 3) score += 3;
     if (hp && row.HP && Math.abs(hp - row.HP) <= 5) score += 2;
-    // Weighted high on purpose: once normalized, a ManCode match is a near-
-    // exact signal (unlike kW/HP proximity, which is inherently fuzzy) —
-    // needs to be enough on its own to beat badge-engineered platform
-    // siblings with identical specs (e.g. VW up! vs Škoda Citigo vs Seat
-    // Mii all share the same engine, date range, kW and HP).
-    if (brandMatches(brand, row.ManCode)) score += 4;
+    // Precise ManNo match beats the fuzzy ManCode fallback — needs to be
+    // enough on its own to beat badge-engineered platform siblings with
+    // identical specs (e.g. VW up! vs Škoda Citigo vs Seat Mii all share
+    // the same engine, date range, kW and HP).
+    if (brandManNoMatches(brand, row.ManNo)) score += 6;
+    else if (brandMatches(brand, row.ManCode)) score += 4;
 
-    return {
-      ktypNo: row.KTypNo,
-      modelSeriesText: termByCTermNo.get(row.ModelSeriesCTermNo) ?? '',
-      typeText: termByCTermNo.get(row.TypeCTermNo) ?? '',
-      engineCodes: engineCodesByKTypNo.get(row.KTypNo) ?? [],
-      modYFrom: row.ModYFrom,
-      modYTo: row.ModYTo,
-      kw: row.KW,
-      hp: row.HP,
-      ccm: row.ccmTech,
-      cyl: row.Cyl,
-      fuelType: FUEL_TYPE_TEXT[row.FuelType] ?? '',
-      score,
-    };
+    return { row, score };
   });
+
+  // Engine codes are frequently shared across an entire platform group
+  // (e.g. VAG's BKC/BLS/BXE 1.9 TDI turns up under Audi, VW, Seat and
+  // Škoda alike), so the unfiltered candidate set routinely mixes brands.
+  // Once we have a *confirmed* ManNo for this brand, drop anything that
+  // doesn't match it outright — no reason to show a VW Golf next to an
+  // Audi A3 when we know for certain which brand the vehicle actually is.
+  // Falls back to the unfiltered set if that would leave nothing, so an
+  // unmapped/incomplete TECDOC_BRAND_MAP entry (e.g. the still-unresolved
+  // "Opel (PSA)" case) degrades to the old permissive behavior instead of
+  // silently returning zero results.
+  const brandManNos = TECDOC_BRAND_MAP[brand.toUpperCase()]?.tecdocManNo ?? [];
+  const brandFiltered =
+    brandManNos.length > 0 ? scored.filter((s) => brandManNos.includes(s.row.ManNo)) : [];
+  const candidates = brandFiltered.length > 0 ? brandFiltered : scored;
+
+  const matches: TecDocMatch[] = candidates.map(({ row, score }) => ({
+    ktypNo: row.KTypNo,
+    modelSeriesText: termByCTermNo.get(row.ModelSeriesCTermNo) ?? '',
+    typeText: termByCTermNo.get(row.TypeCTermNo) ?? '',
+    engineCodes: engineCodesByKTypNo.get(row.KTypNo) ?? [],
+    modYFrom: row.ModYFrom,
+    modYTo: row.ModYTo,
+    kw: row.KW,
+    hp: row.HP,
+    ccm: row.ccmTech,
+    cyl: row.Cyl,
+    fuelType: FUEL_TYPE_TEXT[row.FuelType] ?? '',
+    score,
+  }));
 
   return matches.sort((a, b) => b.score - a.score).slice(0, 5);
 }

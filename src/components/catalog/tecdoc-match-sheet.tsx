@@ -16,6 +16,14 @@ function formatModelYear(yyyymm: number): string {
   return `${month}.${Math.floor(yyyymm / 100)}`;
 }
 
+// Relative to the best-scored candidate in *this* result set, not an
+// absolute confidence — the theoretical max score depends on which signals
+// (date/kW/HP/brand) were even available for this vehicle, so an absolute
+// percentage would understate good matches whenever some signal is missing.
+function matchPercent(score: number, topScore: number): number {
+  return topScore > 0 ? Math.round((score / topScore) * 100) : 0;
+}
+
 // TM1 handles every one of these commands by re-merging onto whatever
 // props.workTask.vehicle currently is (see tm1-bridge.ts). Firing two of
 // them back-to-back is racy: the second one's merge is based on whatever
@@ -94,6 +102,7 @@ export function TecDocMatchSheet({
             <table className="w-full text-sm">
               <thead className="bg-muted/30 text-muted-foreground">
                 <tr>
+                  <th className="px-3 py-2 text-left font-medium">{t('tecDocMatchPercent', lang)}</th>
                   <th className="px-3 py-2 text-left font-medium">{t('tecDocModelSeries', lang)}</th>
                   <th className="px-3 py-2 text-left font-medium">{t('tecDocType', lang)}</th>
                   <th className="px-3 py-2 text-left font-medium">{t('tecDocEngineCode', lang)}</th>
@@ -108,35 +117,52 @@ export function TecDocMatchSheet({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {matches.map((m) => (
-                  <tr key={m.ktypNo}>
-                    <td className="px-3 py-2">{m.modelSeriesText || m.ktypNo}</td>
-                    <td className="px-3 py-2 font-medium">{m.typeText}</td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {m.engineCodes.join(', ')}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                      {formatModelYear(m.modYFrom)} – {formatModelYear(m.modYTo)}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                      {m.kw ? `${m.kw} kW / ${m.hp} HP` : ''}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                      {m.ccm ? `${m.ccm} ccm` : ''}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">{m.cyl || ''}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{m.fuelType}</td>
-                    <td className="px-3 py-2">
-                      <button
-                        type="button"
-                        onClick={() => handleAdd(m)}
-                        className="w-full rounded-[3px] bg-[rgb(224,224,224)] px-3 py-1.5 text-sm font-medium text-[rgb(33,33,33)] transition-colors hover:bg-[rgb(100,101,103)] hover:text-white active:shadow-[0px_5px_5px_-3px_rgba(0,0,0,0.2),0px_8px_10px_1px_rgba(0,0,0,0.14),0px_3px_14px_2px_rgba(0,0,0,0.12)]"
-                      >
-                        {t('tecDocChooseMatch', lang)}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const topScore = Math.max(...matches.map((m) => m.score));
+                  return matches.map((m) => {
+                    const isBest = m.score === topScore;
+                    return (
+                      <tr key={m.ktypNo} className={isBest ? 'bg-green-600/10' : undefined}>
+                        <td className="px-3 py-2">
+                          <span
+                            className={
+                              isBest
+                                ? 'font-semibold text-green-700'
+                                : 'text-muted-foreground'
+                            }
+                          >
+                            {matchPercent(m.score, topScore)}%
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">{m.modelSeriesText || m.ktypNo}</td>
+                        <td className="px-3 py-2 font-medium">{m.typeText}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {m.engineCodes.join(', ')}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                          {formatModelYear(m.modYFrom)} – {formatModelYear(m.modYTo)}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                          {m.kw ? `${m.kw} kW / ${m.hp} HP` : ''}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                          {m.ccm ? `${m.ccm} ccm` : ''}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">{m.cyl || ''}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{m.fuelType}</td>
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => handleAdd(m)}
+                            className="w-full rounded-[3px] bg-[rgb(224,224,224)] px-3 py-1.5 text-sm font-medium text-[rgb(33,33,33)] transition-colors hover:bg-[rgb(100,101,103)] hover:text-white active:shadow-[0px_5px_5px_-3px_rgba(0,0,0,0.2),0px_8px_10px_1px_rgba(0,0,0,0.14),0px_3px_14px_2px_rgba(0,0,0,0.12)]"
+                          >
+                            {t('tecDocChooseMatch', lang)}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
