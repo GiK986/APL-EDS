@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Car, Search, Send, X } from 'lucide-react';
 import { getVehicleInfo } from '@/actions/yq';
@@ -24,6 +24,35 @@ interface CatalogSidebarProps {
 }
 
 type PanelMode = 'vehicle' | 'search' | null;
+
+// Some attributes pack multiple entries either as one string separated by
+// ";" (KIA's "Options": "DRIVE TYPE: ...; WEATHER TYPE: ...") or as several
+// separate array values (Alfa Romeo's "otherFeatures", Renault's "Options" —
+// live-verified via YQ: 3 to 50 array entries, one logical feature each, some
+// individually terminated with ";" too). Either shape reads better one entry
+// per line than `values.join(', ')`'s single wrapped run.
+function AttrValue({ values }: { values: string[] }) {
+  if (values.length <= 1 && !values.some((v) => v.includes(';'))) {
+    return <>{values.join(', ')}</>;
+  }
+
+  const segments = values.flatMap((v) =>
+    v
+      .split(';')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
+  return (
+    <>
+      {segments.map((segment, i) => (
+        <Fragment key={i}>
+          {segment}
+          {i < segments.length - 1 && <br />}
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 export function CatalogSidebar({ lang }: CatalogSidebarProps) {
   const searchParams = useSearchParams();
@@ -229,7 +258,9 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
                     {(vehicle.attributes ?? []).map((a) => (
                       <div key={a.code} className="flex justify-between gap-3">
                         <dt className="text-muted-foreground">{a.label}</dt>
-                        <dd className="text-right font-medium">{a.values.join(', ')}</dd>
+                        <dd className="text-right font-medium">
+                          <AttrValue values={a.values} />
+                        </dd>
                       </div>
                     ))}
                   </dl>
