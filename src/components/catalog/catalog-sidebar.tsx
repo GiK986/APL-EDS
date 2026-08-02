@@ -139,7 +139,11 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
       </aside>
 
       {open && (
-        <div className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card p-4">
+        // h-[93vh] caps the panel so overflow-y-auto actually scrolls
+        // internally (e.g. long attribute lists) instead of growing the
+        // whole page — otherwise this div has no bounded height to overflow.
+        // Roughly aligns with the groups-tree box's own fixed height on the right.
+        <div className="h-[93vh] w-96 shrink-0 overflow-y-auto border-r border-border bg-card p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold">
               {panelMode === 'search' ? t('searchPart', lang) : t('vehicleDetails', lang)}
