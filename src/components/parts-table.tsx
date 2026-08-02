@@ -100,21 +100,25 @@ export function PartsTable({
   if (expandedKey && expandedUnitData) {
     const noteAttr = unitInfoMap[expandedKey]?.attributes?.find((a) => a.code === 'note');
     return (
-      <div className="flex h-[80vh] flex-col">
+      <div className="flex h-[89vh] flex-col">
         <div className="mb-3 flex items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-medium">{cleanText(expandedUnitData.unit.name)}</h3>
-            {expandedUnitData.unit.code && (
-              <p className="text-xs text-muted-foreground">
-                {t('unitLabel', lang)}: {expandedUnitData.unit.code}
-              </p>
-            )}
-            {noteAttr && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {noteAttr.label}:{' '}
-                {highlightCodes(formatNoteValue(cleanText(noteAttr.values.join(', '))), matchCodes)}
-              </p>
-            )}
+            <h3 className="text-sm font-medium">
+              {cleanText(expandedUnitData.unit.name)}
+              {expandedUnitData.unit.code && (
+                <span className="font-normal text-muted-foreground">
+                  {' | '}
+                  {t('unitLabel', lang)}: {expandedUnitData.unit.code}
+                </span>
+              )}
+              {noteAttr && (
+                <span className="font-normal text-muted-foreground">
+                  {' | '}
+                  {noteAttr.label}:{' '}
+                  {highlightCodes(formatNoteValue(cleanText(noteAttr.values.join(', '))), matchCodes)}
+                </span>
+              )}
+            </h3>
           </div>
           <button
             type="button"
@@ -141,7 +145,7 @@ export function PartsTable({
   }
 
   return (
-    <div className={cn(tall ? 'flex h-[80vh] flex-col gap-8' : 'space-y-8')}>
+    <div className={cn(tall ? 'flex h-[89vh] flex-col gap-8' : 'space-y-8')}>
       {categories.map((cat, ci) => (
         <div
           key={cat.category.token ?? ci}
@@ -375,18 +379,22 @@ function UnitPanel({
       {!fullHeight && (
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-sm font-medium">{cleanText(unitData.unit.name)}</h3>
-            {unitData.unit.code && (
-              <p className="text-xs text-muted-foreground">
-                {t('unitLabel', lang)}: {unitData.unit.code}
-              </p>
-            )}
-            {noteAttr && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {noteAttr.label}:{' '}
-                {highlightCodes(formatNoteValue(cleanText(noteAttr.values.join(', '))), matchCodes)}
-              </p>
-            )}
+            <h3 className="text-sm font-medium">
+              {cleanText(unitData.unit.name)}
+              {unitData.unit.code && (
+                <span className="font-normal text-muted-foreground">
+                  {' | '}
+                  {t('unitLabel', lang)}: {unitData.unit.code}
+                </span>
+              )}
+              {noteAttr && (
+                <span className="font-normal text-muted-foreground">
+                  {' | '}
+                  {noteAttr.label}:{' '}
+                  {highlightCodes(formatNoteValue(cleanText(noteAttr.values.join(', '))), matchCodes)}
+                </span>
+              )}
+            </h3>
           </div>
           {canShowAll && onShowAll && (
             <button
