@@ -113,7 +113,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
           aria-current={panelMode === 'vehicle'}
           onClick={() => toggleMode('vehicle')}
           className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-md shadow-sm transition-colors',
+            'flex h-10 w-10 cursor-pointer items-center justify-center rounded-md shadow-sm transition-colors',
             filterLevel
               ? filterLevelFull
                 ? 'bg-green-600/15 text-green-700'
@@ -130,7 +130,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
           aria-current={panelMode === 'search'}
           onClick={() => toggleMode('search')}
           className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-md text-foreground shadow-sm transition-colors',
+            'flex h-10 w-10 cursor-pointer items-center justify-center rounded-md text-foreground shadow-sm transition-colors',
             panelMode === 'search' && 'ring-2 ring-primary/40'
           )}
         >
@@ -148,7 +148,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
               type="button"
               title={t('close', lang)}
               onClick={() => setPanelMode(null)}
-              className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="cursor-pointer rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>
@@ -207,7 +207,7 @@ export function CatalogSidebar({ lang }: CatalogSidebarProps) {
                         type="button"
                         onClick={handleSearchTecDoc}
                         disabled={tecDocLoading}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-[3px] bg-[rgb(224,224,224)] px-3 py-1.5 text-sm font-medium text-[rgb(33,33,33)] transition-colors hover:bg-[rgb(100,101,103)] hover:text-white active:shadow-[0px_5px_5px_-3px_rgba(0,0,0,0.2),0px_8px_10px_1px_rgba(0,0,0,0.14),0px_3px_14px_2px_rgba(0,0,0,0.12)] disabled:opacity-50"
+                        className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-[3px] bg-[rgb(224,224,224)] px-3 py-1.5 text-sm font-medium text-[rgb(33,33,33)] transition-colors hover:bg-[rgb(100,101,103)] hover:text-white active:shadow-[0px_5px_5px_-3px_rgba(0,0,0,0.2),0px_8px_10px_1px_rgba(0,0,0,0.14),0px_3px_14px_2px_rgba(0,0,0,0.12)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Send className="h-3.5 w-3.5" />
                         {t('sendToTm1', lang)}
