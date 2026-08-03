@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import { getCatalogs, getLang, searchVehicleByVinGlobal } from '@/actions/yq';
 import { BrandCard } from '@/components/brand-card';
 import { VinSearchBox } from '@/components/catalog/vin-search-box';
+import { Tm1VinAutoRedirect } from '@/components/tm1-vin-auto-redirect';
 import { buildVehicleGroupsHref } from '@/lib/vehicle-nav';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
@@ -92,6 +93,7 @@ export default async function BrandGridPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <Tm1VinAutoRedirect />
       <div className="mb-8 flex flex-col items-center text-center">
         <h2 className="text-sm font-medium text-muted-foreground">
           {t('vehicleIdentification', lang as Lang)}
