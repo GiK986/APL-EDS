@@ -28,9 +28,18 @@ export function Tm1VinAutoRedirect() {
     if (searchParams.get('vin') || ranRef.current) return;
     if (typeof window === 'undefined' || window.self === window.top) return;
     const flagKey = tm1SessionKey(SESSION_FLAG_PREFIX, tid);
-    if (sessionStorage.getItem(flagKey)) return;
+    try {
+      if (sessionStorage.getItem(flagKey)) return;
+      sessionStorage.setItem(flagKey, '1');
+    } catch {
+      // sessionStorage unavailable (e.g. partitioned/blocked third-party
+      // storage in a cross-origin iframe) — can't read OR write the
+      // once-per-task flag, so treat it the same as "flag already set" and
+      // bail: proceeding without a working flag would let this redirect
+      // re-fire on every subsequent render/navigation instead of just once.
+      return;
+    }
     ranRef.current = true;
-    sessionStorage.setItem(flagKey, '1');
 
     getCustomerData().then((data) => {
       if (data?.vehicle?.vin) {

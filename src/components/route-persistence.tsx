@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useTm1TaskId } from '@/components/tm1-task-context';
-import { tm1SessionKey, TM1_LAST_PATH_PREFIX } from '@/lib/tm1-session-key';
+import { tm1SessionKey, TM1_LAST_PATH_PREFIX, currentPath } from '@/lib/tm1-session-key';
 
 // When embedded as a TM1 iframe (see temp/NEXT_CATALOGUE_IFRAME_REFRESH_BEHAVIOR.md),
 // the parent refreshing its own tab recreates our iframe at the fixed entry URL
@@ -27,8 +27,7 @@ export function RoutePersistence() {
       isFirstRender.current = false;
       return;
     }
-    const query = searchParams.toString();
-    const current = query ? `${pathname}?${query}` : pathname;
+    const current = currentPath(pathname, searchParams);
     try {
       sessionStorage.setItem(tm1SessionKey(TM1_LAST_PATH_PREFIX, tid), current);
     } catch {

@@ -4,13 +4,20 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useTm1TaskId } from '@/components/tm1-task-context';
-import { tm1SessionKey, TM1_LAST_PATH_PREFIX } from '@/lib/tm1-session-key';
+import { tm1SessionKey, TM1_LAST_PATH_PREFIX, currentPath } from '@/lib/tm1-session-key';
 import { t, type Lang } from '@/lib/i18n';
 
 interface RouteRestoreGateProps {
   lang: Lang;
   children: ReactNode;
 }
+
+// Module scope (not a ref/state) on purpose: this component remounts on
+// every client-side nav that lands back on "/" (e.g. the "Начало"
+// breadcrumb), so a ref would reset right along with it. This flag needs to
+// survive those remounts and only reset on a genuine full page reload (TM1
+// recreating the iframe), when the whole JS module reloads fresh.
+let hasRestored = false;
 
 // Guards the Brand Grid's first paint: if a last-visited in-app route is
 // saved for this TM1 task (see route-persistence.tsx), replace to it before
@@ -27,8 +34,16 @@ export function RouteRestoreGate({ lang, children }: RouteRestoreGateProps) {
   const tid = useTm1TaskId();
 
   useEffect(() => {
-    const query = searchParams.toString();
-    const current = query ? `${pathname}?${query}` : pathname;
+    if (hasRestored) {
+      // Already decided once this session — this is a genuine client-side
+      // nav back to "/", not a fresh boot, so don't re-check sessionStorage.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReady(true);
+      return;
+    }
+    hasRestored = true;
+
+    const current = currentPath(pathname, searchParams);
     try {
       const saved = sessionStorage.getItem(tm1SessionKey(TM1_LAST_PATH_PREFIX, tid));
       if (saved && saved !== '/' && saved !== current) {
@@ -41,7 +56,6 @@ export function RouteRestoreGate({ lang, children }: RouteRestoreGateProps) {
     // SSR can't know whether sessionStorage has a saved path — this effect
     // is the only place that decision can be made, so this setState call
     // is unavoidable here.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(true);
   }, [tid, router, pathname, searchParams]);
 
