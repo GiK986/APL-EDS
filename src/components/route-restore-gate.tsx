@@ -34,6 +34,10 @@ export function RouteRestoreGate({ lang, children }: RouteRestoreGateProps) {
     } catch {
       // sessionStorage unavailable — nothing to restore, fall through to ready.
     }
+    // SSR can't know whether sessionStorage has a saved path — this effect
+    // is the only place that decision can be made, so this setState call
+    // is unavoidable here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(true);
   }, [tid, router]);
 
