@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useTm1TaskId } from '@/components/tm1-task-context';
 import { tm1SessionKey, TM1_LAST_PATH_PREFIX } from '@/lib/tm1-session-key';
@@ -22,12 +22,16 @@ interface RouteRestoreGateProps {
 export function RouteRestoreGate({ lang, children }: RouteRestoreGateProps) {
   const [ready, setReady] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const tid = useTm1TaskId();
 
   useEffect(() => {
+    const query = searchParams.toString();
+    const current = query ? `${pathname}?${query}` : pathname;
     try {
       const saved = sessionStorage.getItem(tm1SessionKey(TM1_LAST_PATH_PREFIX, tid));
-      if (saved && saved !== '/') {
+      if (saved && saved !== '/' && saved !== current) {
         router.replace(saved);
         return;
       }
@@ -39,7 +43,7 @@ export function RouteRestoreGate({ lang, children }: RouteRestoreGateProps) {
     // is unavoidable here.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(true);
-  }, [tid, router]);
+  }, [tid, router, pathname, searchParams]);
 
   if (!ready) {
     return (
