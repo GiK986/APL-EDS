@@ -1,54 +1,41 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-
-const LAST_PATH_KEY = 'apl-eds:last-path';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useTm1TaskId } from '@/components/tm1-task-context';
+import { tm1SessionKey, TM1_LAST_PATH_PREFIX } from '@/lib/tm1-session-key';
 
 // When embedded as a TM1 iframe (see temp/NEXT_CATALOGUE_IFRAME_REFRESH_BEHAVIOR.md),
 // the parent refreshing its own tab recreates our iframe at the fixed entry URL
-// ('/'), discarding whatever the user had navigated to. This restores it.
-//
-// TM1 can host several of our iframes at once (one per TM1 task tab), all
-// same-origin and sharing one sessionStorage bucket — so the key is
-// namespaced by `tid` (TM1's task id, passed once on the entry URL) to stop
-// tabs from restoring each other's path. Falls back to a shared key when
-// `tid` is absent (local dev, direct access, or before TM1 adds it).
+// ('/'), discarding whatever the user had navigated to. RouteRestoreGate
+// (src/components/route-restore-gate.tsx) is what restores it on the Brand
+// Grid page — this component only records navigations for that restore to
+// read later, namespaced by TM1's task id (tm1-task-context.tsx) so TM1's
+// several same-origin iframes don't clobber each other's sessionStorage
+// entries.
 export function RoutePersistence() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const hasCheckedInitialLoad = useRef(false);
-  const storageKey = useRef(LAST_PATH_KEY);
+  const tid = useTm1TaskId();
+  const isFirstRender = useRef(true);
 
-  // Runs once per real page load (this component lives in the root layout
-  // and isn't remounted by client-side navigation) — never on a client nav.
-  // A genuine deep link (pathname !== '/') is left untouched.
   useEffect(() => {
-    if (hasCheckedInitialLoad.current) return;
-    hasCheckedInitialLoad.current = true;
-    const tid = searchParams.get('tid');
-    if (tid) storageKey.current = `${LAST_PATH_KEY}:${tid}`;
-    if (pathname !== '/') return;
-    try {
-      const saved = sessionStorage.getItem(storageKey.current);
-      if (saved && saved !== '/') router.replace(saved);
-    } catch {
-      // sessionStorage unavailable (e.g. partitioned/blocked third-party
-      // storage in a cross-origin iframe) — just stay on '/'.
+    // Skip this iframe's boot state — whatever raw entry URL TM1 created it
+    // with (possibly carrying a one-shot Bearer token) is not a real in-app
+    // route, and must never be replayed later.
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
     }
-  }, [pathname, searchParams, router]);
-
-  // Record every navigation so the restore above has something to recover.
-  useEffect(() => {
     const query = searchParams.toString();
     const current = query ? `${pathname}?${query}` : pathname;
     try {
-      sessionStorage.setItem(storageKey.current, current);
+      sessionStorage.setItem(tm1SessionKey(TM1_LAST_PATH_PREFIX, tid), current);
     } catch {
-      // ignore — see above
+      // sessionStorage unavailable (e.g. partitioned/blocked third-party
+      // storage in a cross-origin iframe) — ignore, nothing to persist.
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, tid]);
 
   return null;
 }
