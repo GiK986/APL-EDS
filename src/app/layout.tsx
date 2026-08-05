@@ -5,6 +5,7 @@ import './globals.css';
 import { AppHeader } from '@/components/header';
 import { HeaderVisibility } from '@/components/header-visibility';
 import { RoutePersistence } from '@/components/route-persistence';
+import { Tm1TaskProvider } from '@/components/tm1-task-context';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -38,12 +39,14 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Suspense fallback={null}>
-          <RoutePersistence />
+          <Tm1TaskProvider>
+            <RoutePersistence />
+            <HeaderVisibility>
+              <AppHeader />
+            </HeaderVisibility>
+            <main className="flex-1">{children}</main>
+          </Tm1TaskProvider>
         </Suspense>
-        <HeaderVisibility>
-          <AppHeader />
-        </HeaderVisibility>
-        <main className="flex-1">{children}</main>
       </body>
     </html>
   );
