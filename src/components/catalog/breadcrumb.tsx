@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { ChevronRight, Play } from 'lucide-react';
+import { Tm1Link } from '@/components/tm1-task-context';
 
 export interface BreadcrumbSegment {
   label: string;
@@ -23,33 +23,33 @@ export function Breadcrumb({ segments }: BreadcrumbProps) {
           {seg.nav ? (
             <span className="flex items-center gap-1">
               {seg.nav.prevHref ? (
-                <Link
+                <Tm1Link
                   href={seg.nav.prevHref}
                   aria-label="Previous diagram"
                   className="rounded p-0.5 transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Play className="h-3.5 w-3.5 rotate-180" fill="currentColor" />
-                </Link>
+                </Tm1Link>
               ) : (
                 <Play className="h-3.5 w-3.5 rotate-180 opacity-30" fill="currentColor" />
               )}
               <span className="font-medium text-foreground">{seg.label}</span>
               {seg.nav.nextHref ? (
-                <Link
+                <Tm1Link
                   href={seg.nav.nextHref}
                   aria-label="Next diagram"
                   className="rounded p-0.5 transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Play className="h-3.5 w-3.5" fill="currentColor" />
-                </Link>
+                </Tm1Link>
               ) : (
                 <Play className="h-3.5 w-3.5 opacity-30" fill="currentColor" />
               )}
             </span>
           ) : seg.href ? (
-            <Link href={seg.href} className="transition-colors hover:text-foreground">
+            <Tm1Link href={seg.href} className="transition-colors hover:text-foreground">
               {seg.label}
-            </Link>
+            </Tm1Link>
           ) : (
             <span className="font-medium text-foreground">{seg.label}</span>
           )}
