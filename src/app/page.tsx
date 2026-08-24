@@ -7,6 +7,7 @@ import { VinSearchBox } from '@/components/catalog/vin-search-box';
 import { Tm1VinAutoRedirect } from '@/components/tm1-vin-auto-redirect';
 import { RouteRestoreGate } from '@/components/route-restore-gate';
 import { buildVehicleGroupsHref } from '@/lib/vehicle-nav';
+import { isValidVin } from '@/lib/vin';
 import { t } from '@/lib/i18n';
 import type { Lang } from '@/lib/i18n';
 import type { VehicleV2Dto } from '@/types/yq';
@@ -14,12 +15,6 @@ import type { VehicleV2Dto } from '@/types/yq';
 function brandSlug(brand: string): string {
   return brand.toLowerCase().replace(/\s+/g, '-');
 }
-
-// TM1 can put its own internal vehicle GUID (WORKTASK_VEHICLE_ID) in `vin`
-// instead of a real VIN — ignore anything that isn't 17 chars of the VIN
-// alphabet (ISO 3779 excludes I, O, Q) so a GUID doesn't trigger a bogus
-// "vehicle not found" instead of falling through to Tm1VinAutoRedirect.
-const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/i;
 
 // TM1 deep-links here with ?vin=... (its own TecDoc vehicle selection carries
 // a VIN) to jump straight into the matching vehicle's catalog. A single
@@ -90,7 +85,7 @@ interface PageProps {
 export default async function BrandGridPage({ searchParams }: PageProps) {
   const [{ vin }, lang] = await Promise.all([searchParams, getLang()]);
 
-  if (vin && VIN_PATTERN.test(vin)) {
+  if (vin && isValidVin(vin)) {
     return <VinDeepLink vin={vin} lang={lang as Lang} />;
   }
 
