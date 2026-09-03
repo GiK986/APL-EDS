@@ -79,6 +79,7 @@ function buildPartsHref(
 function buildUnitPartsHref(
   brand: string,
   unit: UnitShortV2Dto,
+  unitIndex: number,
   unitsToken: string,
   groupsToken: string | undefined,
   otherToken: string | undefined,
@@ -89,7 +90,12 @@ function buildUnitPartsHref(
 ): string | undefined {
   const link = unit.links?.find((l) => l.action === 'getUnitParts');
   if (!link) return undefined;
-  const params = new URLSearchParams({ token: link.token, unitsToken, view: 'categories' });
+  const params = new URLSearchParams({
+    token: link.token,
+    unitsToken,
+    view: 'categories',
+    unitIndex: String(unitIndex),
+  });
   if (groupsToken) params.set('groupsToken', groupsToken);
   if (otherToken) params.set('otherToken', otherToken);
   if (unit.code) params.set('unitCode', unit.code);
@@ -109,6 +115,7 @@ interface PageProps {
     otherToken?: string;
     unitsToken?: string;
     unitCode?: string;
+    unitIndex?: string;
     view?: string;
     vin?: string;
     model?: string;
@@ -133,6 +140,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
       otherToken,
       unitsToken,
       unitCode,
+      unitIndex,
       view: viewParam,
       vin,
       model,
@@ -171,6 +179,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
       const href = buildUnitPartsHref(
         brand,
         units[0],
+        0,
         refToken!,
         groupsToken,
         otherToken,
@@ -245,11 +254,23 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
 
     const unitsRes = await getUnits(unitsToken!);
     const allUnits = unitsRes.data?.units ?? [];
-    const idx = allUnits.findIndex(
-      (u) =>
-        (unitCode && u.code === unitCode) ||
-        u.links?.some((l) => l.action === 'getUnitParts' && l.token === token)
-    );
+    // getUnits() re-mints every token (getUnitParts, getUnitInfo, even the
+    // unit's own token) on each call, so a token minted when this href was
+    // built never matches one from this fresh re-fetch — and several units
+    // can share the same manufacturer unitCode (e.g. LH/RH or model-year
+    // variants), so code alone is ambiguous too. Position in the array is
+    // the one thing getUnits() keeps stable across calls for the same
+    // input token, so that's the primary identity; the old token/code
+    // matching stays only as a fallback for links built before this fix.
+    const unitIndexNum = unitIndex !== undefined ? Number(unitIndex) : NaN;
+    const idx =
+      Number.isInteger(unitIndexNum) && unitIndexNum >= 0 && unitIndexNum < allUnits.length
+        ? unitIndexNum
+        : allUnits.findIndex(
+            (u) =>
+              u.links?.some((l) => l.action === 'getUnitParts' && l.token === token) ||
+              (unitCode && u.code === unitCode)
+          );
     const currentUnit = idx !== -1 ? allUnits[idx] : undefined;
 
     const infoLink = currentUnit?.links?.find((l) => l.action === 'getUnitInfo');
@@ -284,6 +305,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
           ? buildUnitPartsHref(
               brand,
               prev,
+              idx - 1,
               unitsToken!,
               groupsToken,
               otherToken,
@@ -297,6 +319,7 @@ export default async function PartsPage({ params, searchParams }: PageProps) {
           ? buildUnitPartsHref(
               brand,
               next,
+              idx + 1,
               unitsToken!,
               groupsToken,
               otherToken,

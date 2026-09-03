@@ -639,9 +639,16 @@ export function UnitsTable({
 
   // Matches against description + the attribute columns (e.g. "Note") —
   // the same text the user actually sees in the table, not the unit code.
+  // Carry each unit's index in the original (unfiltered) `units` array
+  // through search filtering — several units can share the same manufacturer
+  // unitCode (e.g. LH/RH or model-year variants) with tokens that get
+  // re-minted on every getUnits() call, so neither is a safe way to identify
+  // "this exact unit" once we're back on the parts page. Position in the
+  // array is the one thing that stays stable across re-fetches.
   const visibleUnits = useMemo(() => {
-    if (!searchQuery) return units;
-    return units.filter((unit) => {
+    const indexed = units.map((unit, i) => ({ unit, i }));
+    if (!searchQuery) return indexed;
+    return indexed.filter(({ unit }) => {
       if (cleanText(unit.name).toLowerCase().includes(searchQuery)) return true;
       return columns.some((col) =>
         attrCellLines(unit.attributes, col.code).some((line) =>
@@ -651,11 +658,12 @@ export function UnitsTable({
     });
   }, [units, columns, searchQuery]);
 
-  function buildHref(unit: UnitShortV2Dto, partsToken: string): string {
+  function buildHref(unit: UnitShortV2Dto, partsToken: string, unitIndex: number): string {
     const params = new URLSearchParams({
       token: partsToken,
       unitsToken,
       view: 'categories',
+      unitIndex: String(unitIndex),
     });
     if (groupsToken) params.set('groupsToken', groupsToken);
     if (otherToken) params.set('otherToken', otherToken);
@@ -700,13 +708,13 @@ export function UnitsTable({
             </td>
           </tr>
         )}
-        {visibleUnits.map((unit, ui) => {
+        {visibleUnits.map(({ unit, i: unitIndex }) => {
           const partsLink = unit.links?.find((l) => l.action === 'getUnitParts');
-          const href = partsLink ? buildHref(unit, partsLink.token) : undefined;
+          const href = partsLink ? buildHref(unit, partsLink.token, unitIndex) : undefined;
 
           return (
             <tr
-              key={`${unit.token ?? unit.code ?? 'unit'}-${ui}`}
+              key={`${unit.token ?? unit.code ?? 'unit'}-${unitIndex}`}
               onClick={href ? () => router.push(href) : undefined}
               className={cn(
                 'transition-colors',
